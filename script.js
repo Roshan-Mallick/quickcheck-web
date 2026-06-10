@@ -98,7 +98,7 @@ if (pass.length < 8) {
           email,
           password: pass,
           options: {
-    emailRedirectTo: window.location.origin
+    emailRedirectTo: 'https://check-ops.netlify.app'
   }
 });
       if (!result.error && result.data.user && !result.data.session) {
