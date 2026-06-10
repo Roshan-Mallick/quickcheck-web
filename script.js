@@ -102,7 +102,7 @@ if (pass.length < 8) {
   }
 });
       if (!result.error && result.data.user && !result.data.session) {
-        showAuthMsg('Check your email to confirm your account.');
+        showAuthMsg('Check your email (and spam folder) to confirm your account.');
         btn.disabled = false;
         btn.textContent = authMode === 'login' ? 'Sign in' : 'Create account';
         return;
