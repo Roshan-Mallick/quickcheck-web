@@ -13,30 +13,178 @@
 
   <!-- ─── AUTH SCREEN ──────────────────────────────────────────────── -->
   <div id="auth-screen">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <div class="auth-logo-icon">✓</div>
-        <span class="auth-logo-text">CheckOps</span>
+    <header class="auth-header">
+      <div class="auth-brand">
+        <div class="auth-brand-icon">
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none" aria-hidden="true">
+            <path d="M1 4.5L4 7.5L10 1" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="auth-brand-text">CheckOps</span>
       </div>
-      <h1 class="auth-title">Welcome back</h1>
-      <p class="auth-sub">Persistent checklists, always in sync.</p>
-      <div class="auth-tabs">
-        <button class="auth-tab active" onclick="switchTab('login')">Sign in</button>
-        <button class="auth-tab" onclick="switchTab('signup')">Create account</button>
+      <div class="auth-header-tabs">
+        <button class="auth-header-tab active" id="auth-tab-login" onclick="switchAuthView('login')">Sign in</button>
+        <button class="auth-header-tab" id="auth-tab-register" onclick="switchAuthView('register')">Register</button>
       </div>
-      <div id="auth-error" class="auth-error"></div>
-      <div id="auth-msg" class="auth-msg"></div>
-      <div class="field">
-        <label for="auth-email">Email</label>
-        <input type="email" id="auth-email" placeholder="you@example.com" />
+    </header>
+
+    <div class="auth-main">
+      <!-- Left marketing panel -->
+      <aside class="auth-panel-left">
+        <div class="auth-panel-grid"></div>
+        <div class="auth-panel-glow"></div>
+        <div class="auth-panel-top">
+          <div class="auth-beta-label">v0.9.4 · public beta</div>
+          <h2 class="auth-panel-title">Ship with a<br /><span>complete record.</span></h2>
+          <p class="auth-panel-desc">Persistent checklists for engineering teams. Track every deploy, incident, and release gate — without losing state.</p>
+        </div>
+        <div class="auth-panel-bottom">
+          <div class="auth-terminal">
+            <div class="auth-terminal-dots">
+              <span style="background:#ff6058"></span>
+              <span style="background:#ffc130"></span>
+              <span style="background:#27c93f"></span>
+            </div>
+            <pre class="auth-terminal-pre"><span class="t-dim">$ </span><span class="t-bright">npx checklists run deploy</span>
+<span class="t-green">✓</span><span class="t-dim"> Run migrations          </span><span class="t-faint">2s</span>
+<span class="t-green">✓</span><span class="t-dim"> Verify feature flags    </span><span class="t-faint">1s</span>
+<span class="t-blue">→</span><span class="t-muted"> Notify #releases        </span><span class="t-faint">…</span>
+<span class="t-ghost">  resumed · 2 of 5 complete</span></pre>
+          </div>
+          <div class="auth-stats">
+            <div><div class="auth-stat-val">12k+</div><div class="auth-stat-lbl">Engineers</div></div>
+            <div><div class="auth-stat-val">98%</div><div class="auth-stat-lbl">Uptime SLA</div></div>
+            <div><div class="auth-stat-val">SOC 2</div><div class="auth-stat-lbl">Compliant</div></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right form panel -->
+      <div class="auth-panel-right">
+        <div class="auth-form-wrap">
+          <div id="auth-error" class="auth-error"></div>
+          <div id="auth-msg" class="auth-msg"></div>
+
+          <!-- Login -->
+          <div id="auth-view-login" class="auth-view">
+            <div class="auth-form-header">
+              <div class="auth-form-label">Sign in</div>
+              <h1 class="auth-form-title">Welcome back.</h1>
+            </div>
+            <button type="button" class="auth-oauth-btn" onclick="signInWithGitHub()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              Continue with GitHub
+            </button>
+            <div class="auth-divider"><span>or</span></div>
+            <form class="auth-form" onsubmit="handleLoginSubmit(event)">
+              <div class="auth-field">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" required />
+              </div>
+              <div class="auth-field">
+                <div class="auth-field-row">
+                  <label for="login-password">Password</label>
+                  <button type="button" class="auth-inline-btn" onclick="switchAuthView('forgot')">Forgot password?</button>
+                </div>
+                <div class="auth-pass-wrap">
+                  <input type="password" id="login-password" placeholder="••••••••••" autocomplete="current-password" required />
+                  <button type="button" class="auth-pass-toggle" onclick="togglePassword('login-password', this)" aria-label="Show password">
+                    <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+              <button type="submit" class="auth-submit-btn" id="login-btn">Sign in</button>
+            </form>
+            <p class="auth-form-footer">No account? <button type="button" class="auth-link" onclick="switchAuthView('register')">Create one</button></p>
+          </div>
+
+          <!-- Register -->
+          <div id="auth-view-register" class="auth-view" hidden>
+            <div class="auth-form-header">
+              <div class="auth-form-label">Create account</div>
+              <h1 class="auth-form-title">Get started free.</h1>
+            </div>
+            <button type="button" class="auth-oauth-btn" onclick="signInWithGitHub()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+              </svg>
+              Continue with GitHub
+            </button>
+            <div class="auth-divider"><span>or</span></div>
+            <form class="auth-form" onsubmit="handleRegisterSubmit(event)">
+              <div class="auth-field">
+                <label for="register-name">Full name</label>
+                <input type="text" id="register-name" placeholder="Ada Lovelace" autocomplete="name" required />
+              </div>
+              <div class="auth-field">
+                <label for="register-email">Work email</label>
+                <input type="email" id="register-email" placeholder="you@company.com" autocomplete="email" required />
+              </div>
+              <div class="auth-field">
+                <label for="register-password">Password</label>
+                <div class="auth-pass-wrap">
+                  <input type="password" id="register-password" placeholder="••••••••••" autocomplete="new-password" required oninput="updatePasswordStrength()" />
+                  <button type="button" class="auth-pass-toggle" onclick="togglePassword('register-password', this)" aria-label="Show password">
+                    <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+                <div id="password-strength" class="auth-strength" hidden>
+                  <div class="auth-strength-bars">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                  <span class="auth-strength-label"></span>
+                </div>
+              </div>
+              <label class="auth-checkbox">
+                <input type="checkbox" id="register-agreed" onchange="updateRegisterBtn()" />
+                <span class="auth-checkbox-box"></span>
+                <span class="auth-checkbox-text">I agree to the <button type="button" class="auth-link">Terms of Service</button> and <button type="button" class="auth-link">Privacy Policy</button></span>
+              </label>
+              <button type="submit" class="auth-submit-btn" id="register-btn" disabled>Create account</button>
+            </form>
+            <p class="auth-form-footer">Already have an account? <button type="button" class="auth-link" onclick="switchAuthView('login')">Sign in</button></p>
+          </div>
+
+          <!-- Forgot password -->
+          <div id="auth-view-forgot" class="auth-view" hidden>
+            <button type="button" class="auth-back-link" onclick="switchAuthView('login')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back to sign in
+            </button>
+            <div class="auth-form-header">
+              <div class="auth-form-label">Password reset</div>
+              <h1 class="auth-form-title">Reset your password.</h1>
+            </div>
+            <p class="auth-form-desc">Enter the email linked to your account. We'll send a reset link if it matches.</p>
+            <form class="auth-form" onsubmit="handleForgotSubmit(event)">
+              <div class="auth-field">
+                <label for="forgot-email">Email</label>
+                <input type="email" id="forgot-email" placeholder="you@company.com" autocomplete="email" required />
+              </div>
+              <button type="submit" class="auth-submit-btn" id="forgot-btn">Send reset link</button>
+            </form>
+          </div>
+
+          <!-- Forgot sent confirmation -->
+          <div id="auth-view-forgot-sent" class="auth-view" hidden>
+            <button type="button" class="auth-back-link" onclick="switchAuthView('login')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back to sign in
+            </button>
+            <div class="auth-sent-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="auth-form-label">Check your inbox</div>
+            <h1 class="auth-form-title">Instructions sent.</h1>
+            <p class="auth-form-desc">If that address is on file, you'll receive a link within a few minutes. Check spam if needed.</p>
+            <button type="button" class="auth-outline-btn" onclick="switchAuthView('login')">Back to sign in</button>
+          </div>
+        </div>
       </div>
-      <div class="field">
-        <label for="auth-password">Password</label>
-        <input type="password" id="auth-password" placeholder="••••••••"
-               onkeydown="if(event.key==='Enter') doAuth()" />
-      </div>
-      <button class="btn-primary" id="auth-btn" onclick="doAuth()">Sign in</button>
-      <p class="auth-footer-note">No tracking. No ads. Your data stays yours.</p>
     </div>
   </div>
 

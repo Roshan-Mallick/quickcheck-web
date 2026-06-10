@@ -10,7 +10,8 @@ let currentUser = null;
 let parsedData  = null;
 let checklists  = [];   // [{ id, title, data: [{id, title, items: [{id, label, checked}]}] }]
 let activeId    = null;
-let authMode    = 'login';
+let authView    = 'login';
+const AUTH_REDIRECT = () => window.location.origin + window.location.pathname;
 let saving      = false;
 
 // ─── Init ─────────────────────────────────────────────────────────────────
@@ -59,63 +60,156 @@ async function init() {
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────
-function switchTab(mode) {
-  authMode = mode;
-  document.querySelectorAll('.auth-tab').forEach((t, i) => {
-    t.classList.toggle('active', (mode === 'login' && i === 0) || (mode === 'signup' && i === 1));
+function switchAuthView(view) {
+  authView = view;
+  const views = ['login', 'register', 'forgot', 'forgot-sent'];
+  views.forEach(v => {
+    const el = document.getElementById('auth-view-' + v);
+    if (el) el.hidden = v !== view;
   });
-  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Sign in' : 'Create account';
-  document.querySelector('.auth-title').textContent = mode === 'login' ? 'Welcome back' : 'Create your account';
+  const isLoginFlow = view === 'login' || view === 'forgot' || view === 'forgot-sent';
+  document.getElementById('auth-tab-login').classList.toggle('active', isLoginFlow);
+  document.getElementById('auth-tab-register').classList.toggle('active', view === 'register');
   clearAuthMessages();
 }
 
-async function doAuth() {
-  if (!sb) {
-    showAuthError('Supabase is not configured. This app requires Supabase authentication.');
-    return;
-  }
-
-  const email = document.getElementById('auth-email').value.trim();
-  const pass  = document.getElementById('auth-password').value;
-  if (!email || !pass) { showAuthError('Please fill in all fields.'); return; }
-
-if (pass.length < 8) {
-  showAuthError('Password must be at least 8 characters.');
-  return;
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.classList.toggle('showing', show);
+  btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
 }
 
-  const btn = document.getElementById('auth-btn');
-  btn.disabled    = true;
-  btn.textContent = 'Please wait...';
+function getPasswordStrength(pw) {
+  if (!pw.length) return { score: 0, label: '', color: '' };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['#f7768e', '#e0af68', '#9ece6a', '#27c93f'];
+  return { score, label: labels[score - 1] ?? 'Weak', color: colors[score - 1] ?? colors[0] };
+}
+
+function updatePasswordStrength() {
+  const pw = document.getElementById('register-password').value;
+  const wrap = document.getElementById('password-strength');
+  if (!pw.length) { wrap.hidden = true; return; }
+  const s = getPasswordStrength(pw);
+  wrap.hidden = false;
+  wrap.querySelectorAll('.auth-strength-bars span').forEach((bar, i) => {
+    bar.style.background = i < s.score ? s.color : 'rgba(255,255,255,0.08)';
+  });
+  const lbl = wrap.querySelector('.auth-strength-label');
+  lbl.textContent = s.label;
+  lbl.style.color = s.color;
+}
+
+function updateRegisterBtn() {
+  document.getElementById('register-btn').disabled = !document.getElementById('register-agreed').checked;
+}
+
+async function signInWithGitHub() {
+  if (!sb) { showAuthError('Supabase is not configured.'); return; }
+  clearAuthMessages();
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'github',
+    options: { redirectTo: AUTH_REDIRECT() },
+  });
+  if (error) showAuthError(error.message);
+}
+
+async function handleLoginSubmit(e) {
+  e.preventDefault();
+  if (!sb) { showAuthError('Supabase is not configured.'); return; }
+
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) { showAuthError('Please fill in all fields.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
   clearAuthMessages();
 
   try {
-    let result;
-    if (authMode === 'login') {
-      result = await sb.auth.signInWithPassword({ email, password: pass });
-    } else {
-       result = await sb.auth.signUp({
-          email,
-          password: pass,
-          options: {
-    emailRedirectTo: 'https://check-ops.netlify.app'
-  }
-});
-      if (!result.error && result.data.user && !result.data.session) {
-        showAuthMsg('Check your email (and spam folder) to confirm your account.');
-        btn.disabled = false;
-        btn.textContent = authMode === 'login' ? 'Sign in' : 'Create account';
-        return;
-      }
-    }
-    if (result.error) throw result.error;
-    currentUser = result.data.user;
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    currentUser = data.user;
     await enterApp();
   } catch (err) {
     showAuthError(err.message || 'Authentication failed.');
   } finally {
-    btn.disabled    = false;
-    btn.textContent = authMode === 'login' ? 'Sign in' : 'Create account';
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+async function handleRegisterSubmit(e) {
+  e.preventDefault();
+  if (!sb) { showAuthError('Supabase is not configured.'); return; }
+  if (!document.getElementById('register-agreed').checked) return;
+
+  const name  = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const pass  = document.getElementById('register-password').value;
+  if (!name || !email || !pass) { showAuthError('Please fill in all fields.'); return; }
+  if (pass.length < 8) { showAuthError('Password must be at least 8 characters.'); return; }
+
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
+  clearAuthMessages();
+
+  try {
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password: pass,
+      options: {
+        emailRedirectTo: AUTH_REDIRECT(),
+        data: { full_name: name },
+      },
+    });
+    if (error) throw error;
+    if (data.user && !data.session) {
+      showAuthMsg('Check your email (and spam folder) to confirm your account.');
+      return;
+    }
+    currentUser = data.user;
+    await enterApp();
+  } catch (err) {
+    showAuthError(err.message || 'Registration failed.');
+  } finally {
+    btn.textContent = 'Create account';
+    updateRegisterBtn();
+  }
+}
+
+async function handleForgotSubmit(e) {
+  e.preventDefault();
+  if (!sb) { showAuthError('Supabase is not configured.'); return; }
+
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) { showAuthError('Please enter your email.'); return; }
+
+  const btn = document.getElementById('forgot-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  clearAuthMessages();
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: AUTH_REDIRECT(),
+    });
+    if (error) throw error;
+    switchAuthView('forgot-sent');
+  } catch (err) {
+    showAuthError(err.message || 'Failed to send reset link.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send reset link';
   }
 }
 
@@ -135,6 +229,7 @@ async function signOut() {
   checklists  = [];
   document.getElementById('app-screen').style.display  = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
+  switchAuthView('login');
 }
 
 // ─── Supabase DB ──────────────────────────────────────────────────────────
