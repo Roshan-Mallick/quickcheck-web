@@ -163,18 +163,39 @@ async function handleLoginSubmit(e) {
   clearAuthMessages();
 
   try {
+    // Step 1: Check email exists directly in DB
+    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
+
+    if (rpcError) {
+      showAuthError('Something went wrong. Please try again.');
+      return;
+    }
+
+    if (!emailExists) {
+      showAuthError('Email does not exist. Please create a new account.');
+      return;
+    }
+
+    // Step 2: Email exists — attempt login
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
+
+    if (error) {
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('invalid login credentials')) {
+        showAuthError('Incorrect password.');
+      } else if (msg.includes('email not confirmed')) {
+        showAuthError('Please confirm your email before signing in. Check your inbox.');
+      } else {
+        showAuthError(error.message || 'Authentication failed.');
+      }
+      return;
+    }
+
     currentUser = data.user;
     await enterApp();
+
   } catch (err) {
-    if (err.message === 'Invalid login credentials') {
-      showAuthError('Incorrect email or password. Please try again.');
-    } else if (err.message === 'Email not confirmed') {
-      showAuthError('Please confirm your email before signing in. Check your inbox.');
-    } else {
-      showAuthError(err.message || 'Authentication failed.');
-    }
+    showAuthError(err.message || 'Authentication failed.');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Sign in';
@@ -184,27 +205,15 @@ async function handleLoginSubmit(e) {
 // ─── REGISTER ────────────────────────────────────────────────────────────
 async function handleRegisterSubmit(e) {
   e.preventDefault();
-
-  if (!sb) {
-    showAuthError('Supabase is not configured.');
-    return;
-  }
-
+  if (!sb) { showAuthError('Supabase is not configured.'); return; }
   if (!document.getElementById('register-agreed').checked) return;
 
-  const name = document.getElementById('register-name').value.trim();
+  const name  = document.getElementById('register-name').value.trim();
   const email = document.getElementById('register-email').value.trim();
-  const pass = document.getElementById('register-password').value;
+  const pass  = document.getElementById('register-password').value;
 
-  if (!name || !email || !pass) {
-    showAuthError('Please fill in all fields.');
-    return;
-  }
-
-  if (pass.length < 8) {
-    showAuthError('Password must be at least 8 characters.');
-    return;
-  }
+  if (!name || !email || !pass) { showAuthError('Please fill in all fields.'); return; }
+  if (pass.length < 8) { showAuthError('Password must be at least 8 characters.'); return; }
 
   const btn = document.getElementById('register-btn');
   btn.disabled = true;
@@ -212,6 +221,20 @@ async function handleRegisterSubmit(e) {
   clearAuthMessages();
 
   try {
+    // Step 1: Direct DB check
+    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
+
+    if (rpcError) {
+      showAuthError('Something went wrong. Please try again.');
+      return;
+    }
+
+    if (emailExists) {
+      showAuthError('This email is already registered. Please log in.');
+      return;
+    }
+
+    // Step 2: Email doesn't exist — create account
     const { data, error } = await sb.auth.signUp({
       email,
       password: pass,
@@ -221,18 +244,10 @@ async function handleRegisterSubmit(e) {
       }
     });
 
-    console.log('SIGNUP ERROR:', error);
-    console.log('SIGNUP DATA:', data);
-    console.log('USER:', data?.user);
-    console.log('SESSION:', data?.session);
-
-    if (error) {
-      showAuthError(error.message);
-      return;
-    }
+    if (error) { showAuthError(error.message); return; }
 
     if (data?.user && !data?.session) {
-      showAuthMsg('Check your email (and spam folder) to confirm your account.');
+      showAuthMsg('Confirmation email has been sent. Please check your inbox and verify your email.');
       return;
     }
 
@@ -243,9 +258,7 @@ async function handleRegisterSubmit(e) {
     }
 
     showAuthError('Unexpected registration response.');
-
   } catch (err) {
-    console.error(err);
     showAuthError(err.message || 'Registration failed.');
   } finally {
     btn.textContent = 'Create account';
@@ -266,11 +279,27 @@ async function handleForgotSubmit(e) {
   clearAuthMessages();
 
   try {
+    // Step 1: Direct DB check
+    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
+
+    if (rpcError) {
+      showAuthError('Something went wrong. Please try again.');
+      return;
+    }
+
+    if (!emailExists) {
+      showAuthError('No account exists with this email address.');
+      return;
+    }
+
+    // Step 2: Email exists — send reset link
     const { error } = await sb.auth.resetPasswordForEmail(email, {
       redirectTo: AUTH_REDIRECT(),
     });
     if (error) throw error;
+
     switchAuthView('forgot-sent');
+
   } catch (err) {
     showAuthError(err.message || 'Failed to send reset link.');
   } finally {
