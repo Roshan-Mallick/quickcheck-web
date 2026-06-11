@@ -576,35 +576,51 @@ async function handleDeleteAccount() {
   if (!sb || !currentUser) return;
 
   const confirmed = confirm(
-    'This will permanently delete your account and ALL checklists. This cannot be undone.\n\nType OK to confirm.'
+    'A confirmation email will be sent to your email address.\n\nClick the link in the email to permanently delete your account.'
   );
+
   if (!confirmed) return;
 
   const btn = document.querySelector('.btn-danger-outline');
   btn.disabled = true;
-  btn.textContent = 'Deleting…';
+  btn.textContent = 'Sending email…';
 
   try {
-    const { error } = await sb.rpc('delete_own_account');
-    if (error) throw error;
+    const { data: { session } } = await sb.auth.getSession();
 
-    // Clean up local state
-    currentUser = null;
-    activeId = null;
-    checklists = [];
+    const res = await fetch(
+      'https://gnzkwjzssumrnafqrmof.supabase.co/functions/v1/delete-account',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      }
+    );
 
-    closeModal('account-modal');
-    document.getElementById('app-screen').style.display = 'none';
-    document.getElementById('auth-screen').style.display = 'flex';
-    switchAuthView('login');
-    showToast('Account deleted.');
+    if (!res.ok) {
+      throw new Error('Failed to send confirmation email.');
+    }
+
+    showAccountMsg(
+      'Confirmation email sent. Check your inbox.',
+      'success'
+    );
+
+    btn.textContent = 'Email sent';
 
   } catch (err) {
-    showAccountMsg(err.message || 'Failed to delete account.', 'error');
+    showAccountMsg(
+      err.message || 'Failed to send confirmation email.',
+      'error'
+    );
+
     btn.disabled = false;
     btn.textContent = 'Delete my account';
   }
 }
+
 
 async function copyInviteLink() {
   const link = window.location.origin;
