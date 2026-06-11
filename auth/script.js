@@ -14,7 +14,7 @@ let saving      = false;
 // ─── Init ─────────────────────────────────────────────────────────────────
 function initSupabase() {
   if (SUPABASE_URL === 'https://YOUR_PROJECT.supabase.co' || SUPABASE_ANON === 'YOUR_ANON_KEY_HERE') {
-    console.error('[CheckOps] Supabase configuration required. Please update SUPABASE_URL and SUPABASE_ANON.');
+    console.error('[Quickcheck] Supabase configuration required. Please update SUPABASE_URL and SUPABASE_ANON.');
     showAuthError('Supabase is not configured. Please set your API keys.');
     return false;
   }
@@ -23,7 +23,7 @@ function initSupabase() {
 
     return true;
   } catch(e) {
-    console.error('[CheckOps] Supabase init failed:', e.message);
+    console.error('[Quickcheck] Supabase init failed:', e.message);
     showAuthError('Failed to initialize Supabase: ' + e.message);
     return false;
   }
@@ -463,9 +463,9 @@ function handleSendInvite(e) {
 
   const link = window.location.origin;
   const from = getDisplayName(currentUser);
-  const subject = encodeURIComponent(`${from} invited you to CheckOps`);
+  const subject = encodeURIComponent(`${from} invited you to Quickcheck`);
   const body = encodeURIComponent(
-    `Hi,\n\n${from} invited you to join CheckOps — persistent checklists for engineering teams.\n\nSign up here: ${link}\n\nSee you there!`
+    `Hi,\n\n${from} invited you to join Quickcheck — persistent checklists for engineering teams.\n\nSign up here: ${link}\n\nSee you there!`
   );
   window.open(`mailto:${to}?subject=${subject}&body=${body}`, '_blank');
   showAccountMsg('Invite opened in your email app.');
