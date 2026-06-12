@@ -8,7 +8,7 @@ const AUTH_REDIRECT = () => window.location.origin + '/auth/';
 // ─── Supabase Init Options ────────────────
 const SUPABASE_OPTIONS = {
   auth: {
-    detectSessionInUrl: false,
+    detectSessionInUrl: true,
     flowType: 'pkce',
     persistSession: true,
   }
