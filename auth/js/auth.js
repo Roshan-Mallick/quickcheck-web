@@ -57,13 +57,6 @@ function updateRegisterBtn() {
     !document.getElementById('register-agreed').checked;
 }
 
-// ─── Session helpers ──────────────────────────────────────────────────────
-
-async function clearStaleAuth() {
-  // Do nothing
-  return;
-}
-
 /**
  * Exchange the OAuth callback code for a session on redirect back from
  * Google / GitHub.
@@ -71,14 +64,17 @@ async function clearStaleAuth() {
 async function handleAuthCallback() {
   const params = new URLSearchParams(window.location.search);
   const code   = params.get('code');
-  if (!code) return;
+  const error  = params.get('error');
+  if (!code) {
+    if (error) showAuthError('Sign-in was cancelled or failed.');
+    return;
+  }
 
-  const { error } = await sb.auth.exchangeCodeForSession(code);
+  const { error: xcodeError } = await sb.auth.exchangeCodeForSession(code);
   window.history.replaceState({}, document.title, window.location.pathname);
 
-  if (error) {
-    await clearStaleAuth();
-    showAuthError('GitHub sign-in failed: ' + error.message);
+  if (xcodeError) {
+    showAuthError('Authentication failed: ' + xcodeError.message);
   }
 }
 

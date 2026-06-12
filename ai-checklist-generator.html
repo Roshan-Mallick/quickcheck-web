@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Checklist Generator — Quickcheck</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta name="description" content="Generate Markdown checklists with ChatGPT and import them into Quickcheck.">
+  <meta name="theme-color" content="#050505">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .prompt-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--doc-border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 0 0 20px;
+      position: relative;
+    }
+    .prompt-block pre {
+      margin: 0;
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--doc-muted);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .prompt-block pre .hl { color: var(--doc-text); }
+    .prompt-block pre .dim { color: #6a6a76; }
+    .prompt-block pre .accent { color: var(--doc-accent); }
+    .prompt-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 36px;
+    }
+    .btn-copy {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--doc-border);
+      background: transparent;
+      color: var(--doc-text);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .btn-copy:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+    .btn-copy.copied { border-color: var(--accent); color: var(--accent); }
+    .btn-copy svg { width: 16px; height: 16px; flex-shrink: 0; }
+  </style>
+</head>
+<body class="doc-page page-docs">
+
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="brand-group">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+        <span>Quickcheck</span>
+      </a>
+      <a href="index.html" class="home-link">Home</a>
+    </div>
+    <a href="auth/index.html" class="nav-cta">Get started</a>
+  </nav>
+
+  <div class="container">
+
+    <header class="doc-header">
+      <h1>AI Checklist Generator</h1>
+      <p class="doc-meta">Generate Markdown checklists with ChatGPT and import them into Quickcheck.</p>
+    </header>
+
+    <div class="doc-section">
+      <h2>How it works</h2>
+      <ol>
+        <li><strong>Copy the prompt</strong> below.</li>
+        <li><strong>Open ChatGPT</strong> in a new tab.</li>
+        <li><strong>Paste the prompt</strong> into the chat.</li>
+        <li><strong>Send your topic</strong> (e.g. "Deploy a Next.js app to production").</li>
+        <li><strong>Save the generated Markdown</strong> as a <code>.md</code> file.</li>
+        <li><strong>Upload it into Quickcheck</strong> using the Import button.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Prompt</h2>
+      <p>Copy this prompt into ChatGPT. It will convert any topic into a structured Markdown checklist.</p>
+      <div class="prompt-block" id="prompt-block">
+        <pre id="prompt-text">You are a Markdown checklist generator.
+
+Your job is to create complete Markdown checklist files from user-provided topics.
+
+<span class="hl">STARTUP BEHAVIOR</span>
+
+If the user has not yet provided a topic, respond with exactly:
+
+What checklist would you like me to create?
+
+Wait for the user's reply.
+
+After the user provides a topic, generate a complete Markdown checklist file.
+
+<span class="hl">RULES</span>
+
+<span class="dim">* Do not ask follow-up questions.</span>
+<span class="dim">* Do not request clarification.</span>
+<span class="dim">* Make reasonable assumptions when details are missing.</span>
+<span class="dim">* Generate the most practical version possible.</span>
+<span class="dim">* Cover the entire workflow.</span>
+<span class="dim">* Include preparation steps when relevant.</span>
+<span class="dim">* Include execution steps when relevant.</span>
+<span class="dim">* Include verification steps when relevant.</span>
+<span class="dim">* Include completion steps when relevant.</span>
+<span class="dim">* Include cleanup steps when relevant.</span>
+<span class="dim">* Include safety checks when relevant.</span>
+
+<span class="hl">OUTPUT RULES</span>
+
+<span class="dim">* Return only valid Markdown.</span>
+<span class="dim">* The output must be ready to save directly as a .md file.</span>
+<span class="dim">* Begin immediately with checklist content.</span>
+<span class="dim">* Use nested checklists where appropriate.</span>
+<span class="dim">* Group tasks into logical sections.</span>
+<span class="dim">* Do not include introductions.</span>
+<span class="dim">* Do not include explanations.</span>
+<span class="dim">* Do not include summaries.</span>
+<span class="dim">* Do not include notes outside the checklist.</span>
+<span class="dim">* Do not wrap output in code fences.</span>
+
+<span class="hl">FORMAT</span>
+
+<span class="dim"># Checklist Title</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Section</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Task</span>
+<span class="dim">  * [ ] Task</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Section</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Task</span>
+
+<span class="hl">EXAMPLE</span>
+
+<span class="accent">User:</span>
+<span class="dim">Deploy a Next.js Application</span>
+
+<span class="accent">Output:</span>
+<span class="dim"># Deploy a Next.js Application</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Pre-deployment</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Verify environment variables</span>
+<span class="dim">  * [ ] Run production build</span>
+<span class="dim">  * [ ] Review pending changes</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Deployment</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Deploy latest version</span>
+<span class="dim">  * [ ] Confirm deployment completed successfully</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Verification</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Verify homepage</span>
+<span class="dim">  * [ ] Verify authentication</span>
+<span class="dim">  * [ ] Verify critical workflows</span>
+<span class="dim"></span>
+<span class="dim">* [ ] Post-deployment</span>
+<span class="dim"></span>
+<span class="dim">  * [ ] Monitor logs</span>
+<span class="dim">  * [ ] Monitor error rates</span>
+
+When a topic is provided, immediately generate the complete Markdown checklist file.</pre>
+      </div>
+
+      <div class="prompt-actions">
+        <button class="btn-copy" id="copy-btn" onclick="copyPrompt()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy Prompt
+        </button>
+        <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" class="btn-copy" style="text-decoration:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open ChatGPT
+        </a>
+      </div>
+
+      <h3>Import into Quickcheck</h3>
+      <p>Once you have your <code>.md</code> file, sign in and upload it using the <strong>Upload .md template</strong> button. Sections become editable groups and items are ready to track.</p>
+      <p><a href="auth/index.html" class="btn-primary" style="display:inline-flex;text-decoration:none;margin-top:4px">Open Quickcheck</a></p>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+            <span>Quickcheck</span>
+          </a>
+          <p>Persistent checklists for engineering teams.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="index.html#capabilities">Features</a></li>
+            <li><a href="index.html#pricing">Pricing</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="ai-checklist-generator.html">AI Checklist Generator</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="security.html">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    function copyPrompt() {
+      var text = document.getElementById('prompt-text').textContent;
+      var btn = document.getElementById('copy-btn');
+      navigator.clipboard.writeText(text).then(function () {
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        setTimeout(function () {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Prompt';
+        }, 2000);
+      }).catch(function () {
+        fallbackCopy(text);
+      });
+    }
+
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        var btn = document.getElementById('copy-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        setTimeout(function () {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Prompt';
+        }, 2000);
+      } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  </script>
+</body>
+</html>

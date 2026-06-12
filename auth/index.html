@@ -27,10 +27,10 @@
   <!-- ─── AUTH SCREEN ──────────────────────────────────────────────── -->
   <div id="auth-screen">
     <header class="auth-header">
-      <div class="auth-brand">
-        <img src="../assets/logo.png" alt="Quickcheck Logo" class="auth-brand-icon">
+      <a href="../index.html" class="auth-brand" aria-label="Go to Quickcheck home page">
+        <img src="../assets/logo.png" alt="" class="auth-brand-icon">
         <span class="auth-brand-text">Quickcheck</span>
-      </div>
+      </a>
       <div class="auth-header-tabs">
         <button class="auth-header-tab active" id="auth-tab-login" onclick="switchAuthView('login')">Sign in</button>
         <button class="auth-header-tab" id="auth-tab-register" onclick="switchAuthView('register')">Register</button>
@@ -101,7 +101,7 @@
             <form class="auth-form" onsubmit="handleLoginSubmit(event)">
               <div class="auth-field">
                 <label for="login-email">Email</label>
-                <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" spellcheck="false" required />
+                <input type="email" id="login-email" placeholder="roshanmallick2025@gmail.com" autocomplete="email" spellcheck="false" required />
               </div>
               <div class="auth-field">
                 <div class="auth-field-row">
@@ -146,12 +146,12 @@
             <div class="auth-divider"><span>or</span></div>
             <form class="auth-form" onsubmit="handleRegisterSubmit(event)">
               <div class="auth-field">
-                <label for="register-name">Full name</label>
-                <input type="text" id="register-name" placeholder="Ada Lovelace" autocomplete="name" spellcheck="false" required />
+                <label for="register-name">Username</label>
+                <input type="text" id="register-name" placeholder="Username" autocomplete="name" spellcheck="false" required />
               </div>
               <div class="auth-field">
                 <label for="register-email">Work email</label>
-                <input type="email" id="register-email" placeholder="you@company.com" autocomplete="email" spellcheck="false" required />
+                <input type="email" id="register-email" placeholder="roshanmallick2025@gmail.com" autocomplete="email" spellcheck="false" required />
               </div>
               <div class="auth-field">
                 <label for="register-password">Password</label>
@@ -172,7 +172,7 @@
               <label class="auth-checkbox">
                 <input type="checkbox" id="register-agreed" onchange="updateRegisterBtn()" />
                 <span class="auth-checkbox-box"></span>
-                <span class="auth-checkbox-text">I agree to the <button type="button" class="auth-link">Terms of Service</button> and <button type="button" class="auth-link">Privacy Policy</button></span>
+                <span class="auth-checkbox-text">I agree to the <a href="../terms.html" target="_blank" class="auth-link">Terms of Service</a> and <a href="../privacy.html" target="_blank" class="auth-link">Privacy Policy</a></span>
               </label>
               <button type="submit" class="auth-submit-btn" id="register-btn" disabled>Create account</button>
             </form>
@@ -193,7 +193,7 @@
             <form class="auth-form" onsubmit="handleForgotSubmit(event)">
               <div class="auth-field">
                 <label for="forgot-email">Email</label>
-                <input type="email" id="forgot-email" placeholder="you@company.com" autocomplete="email" spellcheck="false" required />
+                <input type="email" id="forgot-email" placeholder="roshanmallick2025@gmail.com" autocomplete="email" spellcheck="false" required />
               </div>
               <button type="submit" class="auth-submit-btn" id="forgot-btn">Send reset link</button>
             </form>
@@ -433,7 +433,7 @@
           <form class="account-form" onsubmit="handleChangeEmail(event)">
             <div class="account-field">
               <label for="account-email-input">New email address</label>
-              <input type="email" id="account-email-input" placeholder="you@company.com" autocomplete="email" spellcheck="false"/>
+              <input type="email" id="account-email-input" placeholder="roshanmallick2025@gmail.com" autocomplete="email" spellcheck="false"/>
             </div>
             <p class="account-hint">A confirmation link will be sent to the new address.</p>
             <button type="submit" class="btn-primary account-save-btn" id="account-email-btn">Update email</button>

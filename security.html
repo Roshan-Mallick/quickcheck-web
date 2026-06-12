@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security — Quickcheck</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta name="description" content="Quickcheck Security — how we protect your data.">
+  <meta name="theme-color" content="#050505">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="doc-page page-legal">
+
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="brand-group">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+        <span>Quickcheck</span>
+      </a>
+      <a href="index.html" class="home-link">Home</a>
+    </div>
+    <a href="auth/index.html" class="nav-cta">Get started</a>
+  </nav>
+
+  <div class="container">
+
+    <header class="doc-header">
+      <h1>Security</h1>
+      <p class="doc-meta">How Quickcheck protects your data.</p>
+    </header>
+
+    <div class="doc-section">
+      <h2>Security overview</h2>
+      <p>Quickcheck is built with security as a core requirement. All data is encrypted in transit and at rest. Authentication is handled by Supabase Auth, and database access is restricted by row-level security policies.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Authentication</h2>
+      <p>Authentication is handled by Supabase Auth, which provides secure session management using JWT tokens with automatic refresh. Passwords are hashed using bcrypt and are never stored in plain text.</p>
+      <p>We support three authentication methods:</p>
+      <ul>
+        <li><strong>Email and password</strong> — accounts are protected by password hashing and optional email confirmation.</li>
+        <li><strong>Google Sign-In</strong> — authentication is delegated to Google using OAuth 2.0. We never receive or store your Google password.</li>
+        <li><strong>GitHub Sign-In</strong> — authentication is delegated to GitHub using OAuth 2.0. We never receive or store your GitHub password.</li>
+      </ul>
+    </div>
+
+    <div class="doc-section">
+      <h2>Data storage</h2>
+      <p>All data transmitted between your browser and Quickcheck's infrastructure is encrypted using HTTPS/TLS. This includes checklist content, authentication credentials, and API requests. Insecure HTTP requests are automatically redirected to HTTPS.</p>
+      <p>Checklist data is stored in PostgreSQL databases with row-level security (RLS) policies. Each user's data is isolated at the database level, ensuring that users can only access their own checklists. Database backups are encrypted and stored securely.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Infrastructure</h2>
+      <p>Quickcheck is built on Supabase, a hosted backend platform that provides authentication, database, and storage services. Supabase runs on AWS infrastructure and maintains industry-standard security certifications.</p>
+      <p>Your data is stored in PostgreSQL databases with automated backups, encryption at rest, and network isolation. Database connections are encrypted using TLS. Access to production infrastructure is restricted to the core development team and requires multi-factor authentication.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Responsible disclosure</h2>
+      <p>If you discover a security vulnerability in Quickcheck, please report it privately to <a href="mailto:roshanmallick2025@gmail.com">roshanmallick2025@gmail.com</a>.</p>
+      <p>We ask that you:</p>
+      <ul>
+        <li>Do not publicly disclose the vulnerability before we have had an opportunity to address it.</li>
+        <li>Do not exploit the vulnerability beyond what is necessary to demonstrate it.</li>
+        <li>Do not access or modify another user's data without their explicit permission.</li>
+      </ul>
+      <p>We will acknowledge receipt of your report within 72 hours and work to address verified vulnerabilities promptly.</p>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+            <span>Quickcheck</span>
+          </a>
+          <p>Persistent checklists for engineering teams.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="index.html#capabilities">Features</a></li>
+            <li><a href="index.html#pricing">Pricing</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="ai-checklist-generator.html">AI Checklist Generator</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="security.html">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -59,10 +59,14 @@ async function deleteChecklist(id) {
     return;
   }
 
-  checklists = checklists.filter(c => c.id !== id);
-  await sb.from('checklists').delete().eq('id', id);
-
-  if (activeId === id) { activeId = null; showEmptyState(); }
-  renderSidebar();
-  showToast('Checklist deleted.');
+  try {
+    const { error } = await sb.from('checklists').delete().eq('id', id);
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
+    checklists = checklists.filter(c => c.id !== id);
+    if (activeId === id) { activeId = null; showEmptyState(); }
+    renderSidebar();
+    showToast('Checklist deleted.');
+  } catch (err) {
+    showToast('Delete failed: ' + err.message, 'error');
+  }
 }

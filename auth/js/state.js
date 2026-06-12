@@ -44,8 +44,7 @@ async function init() {
 
   await handleAuthCallback();
 
-  const { data: { session }, error: sessionError } = await sb.auth.getSession();
-  if (sessionError) await clearStaleAuth();
+  const { data: { session } } = await sb.auth.getSession();
 
   if (session?.user) {
     currentUser = session.user;

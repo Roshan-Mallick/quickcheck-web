@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — Quickcheck</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta name="description" content="Quickcheck documentation — how to use persistent checklists for engineering teams.">
+  <meta name="theme-color" content="#050505">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="doc-page page-docs">
+
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="brand-group">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+        <span>Quickcheck</span>
+      </a>
+      <a href="index.html" class="home-link">Home</a>
+    </div>
+    <a href="auth/index.html" class="nav-cta">Get started</a>
+  </nav>
+
+  <div class="container">
+
+    <header class="doc-header">
+      <h1>Documentation</h1>
+      <p class="doc-meta">How Quickcheck works and how to use it.</p>
+    </header>
+
+    <div class="doc-section">
+      <h2>Overview</h2>
+      <p>Quickcheck is a web-based checklist tool for engineering teams. Checklists persist across sessions, so you can track progress on deployments, incident response, release gates, and other operational processes without losing state.</p>
+      <p>The application runs entirely in the browser with data stored in a PostgreSQL database via Supabase. Authentication supports email/password, Google OAuth, and GitHub OAuth.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Getting started</h2>
+      <ol>
+        <li><strong>Create an account</strong> — sign up at <a href="auth/index.html">auth/index.html</a> using email, Google, or GitHub.</li>
+        <li><strong>Create a checklist</strong> — click "New checklist" in the sidebar and choose "Blank checklist" or upload a markdown template.</li>
+        <li><strong>Add sections and items</strong> — click section titles or item labels to edit them inline. Check items off as you complete them.</li>
+        <li><strong>Progress is saved automatically</strong> — every change syncs to the database in real time.</li>
+        <li><strong>Return anytime</strong> — your checklists are waiting when you come back.</li>
+      </ol>
+    </div>
+
+    <div class="doc-section">
+      <h2>Authentication</h2>
+      <p>Quickcheck uses Supabase Auth for all authentication. Sessions are managed with refresh-enabled JWTs. Passwords are hashed with bcrypt before storage.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Supabase integration</h2>
+      <p>Data storage and authentication are provided by Supabase. Each user's checklists are stored in a <code>checklists</code> table with row-level security (RLS) policies that restrict access to the owning user.</p>
+      <p>Database connections are encrypted with TLS. Backups run automatically and are stored encrypted. The Supabase project is configured with standard security hardening including network restrictions and automated patching.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Google OAuth</h2>
+      <p>Sign in with a Google account using OAuth 2.0. Quickcheck requests access to your email address and basic profile information. No other Google services are accessed.</p>
+      <p>After sign-in, the browser redirects to the callback handler at <code>/auth</code>, which exchanges the authorization code for a session. You are then redirected to the dashboard.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>GitHub OAuth</h2>
+      <p>Sign in with a GitHub account using OAuth 2.0. Quickcheck requests access to your email address and basic profile information. No other GitHub services are accessed.</p>
+      <p>After sign-in, the browser redirects to the callback handler at <code>/auth</code>, which exchanges the authorization code for a session. You are then redirected to the dashboard.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Checklist storage</h2>
+      <p>Each checklist is stored as a single row in the <code>checklists</code> table. The data column contains the full checklist structure (sections, items, checked state) serialized as JSON. This keeps read and write operations atomic.</p>
+      <p>RLS policies ensure that:</p>
+      <ul>
+        <li>Users can only read their own checklists.</li>
+        <li>Users can only insert or update their own checklists.</li>
+        <li>Users can only delete their own checklists.</li>
+      </ul>
+      <p>Checklist titles are also stored as a separate indexed column for efficient listing in the sidebar.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>FAQ</h2>
+
+      <h3>Is my data encrypted?</h3>
+      <p>Yes. All data in transit is encrypted with HTTPS/TLS. Data at rest is encrypted by Supabase's infrastructure (PostgreSQL encryption at rest). Checklist content is not end-to-end encrypted.</p>
+
+      <h3>Can I export my checklists?</h3>
+      <p>Not yet. Export is on the roadmap. For now, checklists are accessible whenever you sign in to your account.</p>
+
+      <h3>Can I share checklists with my team?</h3>
+      <p>Not yet. The current version is single-user. Team collaboration features are planned.</p>
+
+      <h3>What happens if I delete my account?</h3>
+      <p>All checklist data associated with the account is permanently deleted. The process is irreversible. A confirmation email is sent before deletion completes.</p>
+
+      <h3>Which browsers are supported?</h3>
+      <p>Quickcheck supports the latest two versions of Chrome, Firefox, Safari, and Edge.</p>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+            <span>Quickcheck</span>
+          </a>
+          <p>Persistent checklists for engineering teams.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="index.html#capabilities">Features</a></li>
+            <li><a href="index.html#pricing">Pricing</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="ai-checklist-generator.html">AI Checklist Generator</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="security.html">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
