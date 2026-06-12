@@ -18,10 +18,10 @@
   <link rel="icon" type="image/png" href="assets/logo.png">
   <meta name="description" content="Build repeatable processes, track progress across sessions, and keep operational knowledge alive. Persistent checklists for engineering teams.">
   <meta name="theme-color" content="#050507">
+  <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -55,34 +55,38 @@
       </div>
 
       <div class="hero-visual">
-        <div class="hero-preview">
-          <div class="preview-checklist">
-            <div class="preview-header">
-              <div class="preview-progress">
-                <span class="progress-label">Overall Progress</span>
-                <span class="progress-count">12/16</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 75%"></div>
-              </div>
+        <div class="hero-window">
+          <div class="hero-window-bar">
+            <span class="dot dot-red"></span>
+            <span class="dot dot-yellow"></span>
+            <span class="dot dot-green"></span>
+            <span class="hero-window-title">checklist — deploy.md</span>
+          </div>
+          <div class="hero-window-content">
+            <div class="hero-progress-row">
+              <span class="hero-progress-label">Overall Progress</span>
+              <span class="hero-progress-text">12/16</span>
+            </div>
+            <div class="hero-progress-bar">
+              <div class="hero-progress-fill" style="width: 75%"></div>
             </div>
 
-            <div class="preview-section">
-              <h4 class="preview-section-title">PRE-DEPLOY</h4>
-              <ul class="preview-items">
-                <li class="preview-item done"><span class="check">✓</span>Run database migration scripts</li>
-                <li class="preview-item done"><span class="check">✓</span>Verify staging environment passes smoke tests</li>
-                <li class="preview-item done"><span class="check">✓</span>Notify on-call engineer of deploy window</li>
-                <li class="preview-item"><span class="check"></span>Update feature flags in LaunchDarkly</li>
+            <div class="hero-section-group">
+              <h4 class="hero-section-title">PRE-DEPLOY</h4>
+              <ul class="hero-checklist">
+                <li class="hero-item checked"><span class="hero-checkbox">✓</span>Run database migration scripts</li>
+                <li class="hero-item checked"><span class="hero-checkbox">✓</span>Verify staging environment passes smoke tests</li>
+                <li class="hero-item checked"><span class="hero-checkbox">✓</span>Notify on-call engineer of deploy window</li>
+                <li class="hero-item"><span class="hero-checkbox"></span>Update feature flags in LaunchDarkly</li>
               </ul>
             </div>
 
-            <div class="preview-section">
-              <h4 class="preview-section-title">DEPLOY</h4>
-              <ul class="preview-items">
-                <li class="preview-item done"><span class="check">✓</span>Execute rolling deploy to production</li>
-                <li class="preview-item done"><span class="check">✓</span>Monitor error rate dashboard for 15 min</li>
-                <li class="preview-item"><span class="check"></span>Run integration test suite against prod</li>
+            <div class="hero-section-group">
+              <h4 class="hero-section-title">DEPLOY</h4>
+              <ul class="hero-checklist">
+                <li class="hero-item checked"><span class="hero-checkbox">✓</span>Execute rolling deploy to production</li>
+                <li class="hero-item checked"><span class="hero-checkbox">✓</span>Monitor error rate dashboard for 15 min</li>
+                <li class="hero-item"><span class="hero-checkbox"></span>Run integration test suite against prod</li>
               </ul>
             </div>
           </div>
@@ -110,43 +114,49 @@
   <section class="showcase section-padding reveal" id="showcase">
     <div class="container">
       <div class="showcase-grid">
-        <div class="showcase-content">
+        <div class="showcase-text">
           <p class="showcase-eyebrow">Product</p>
           <h2 class="section-heading">One checklist. Every detail tracked.</h2>
-          <p class="showcase-description">Quickcheck replaces scattered documents and forgotten Slack threads with structured, persistent checklists that survive across sessions, teams, and time zones.</p>
+          <p class="body-text">Quickcheck replaces scattered documents and forgotten Slack threads with structured, persistent checklists that survive across sessions, teams, and time zones.</p>
           
-          <ul class="feature-list">
-            <li><span class="check-icon">✓</span>Real-time progress tracking across team members</li>
-            <li><span class="check-icon">✓</span>Markdown import from existing runbooks</li>
-            <li><span class="check-icon">✓</span>Automatic cloud sync with zero configuration</li>
-            <li><span class="check-icon">✓</span>Row-level security isolates team data</li>
+          <ul class="showcase-features">
+            <li><span class="feature-check">✓</span>Real-time progress tracking across team members</li>
+            <li><span class="feature-check">✓</span>Markdown import from existing runbooks</li>
+            <li><span class="feature-check">✓</span>Automatic cloud sync with zero configuration</li>
+            <li><span class="feature-check">✓</span>Row-level security isolates team data</li>
           </ul>
         </div>
 
-        <div class="showcase-image">
-          <div class="preview-checklist">
-            <div class="preview-header">
-              <div class="preview-progress">
-                <span class="progress-label">Incident Response</span>
-                <span class="progress-count">2/5</span>
+        <div class="showcase-visual">
+          <div class="hero-window">
+            <div class="hero-window-bar">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="hero-window-title">incident — response.md</span>
+            </div>
+            <div class="hero-window-content">
+              <div class="hero-progress-row">
+                <span class="hero-progress-label">Incident Response</span>
+                <span class="hero-progress-text">2/5</span>
               </div>
-            </div>
 
-            <div class="preview-section">
-              <h4 class="preview-section-title">TRIAGE</h4>
-              <ul class="preview-items">
-                <li class="preview-item done"><span class="check">✓</span>Identify affected services</li>
-                <li class="preview-item done"><span class="check">✓</span>Page incident commander</li>
-                <li class="preview-item"><span class="check"></span>Open bridge call</li>
-              </ul>
-            </div>
+              <div class="hero-section-group">
+                <h4 class="hero-section-title">TRIAGE</h4>
+                <ul class="hero-checklist">
+                  <li class="hero-item checked"><span class="hero-checkbox">✓</span>Identify affected services</li>
+                  <li class="hero-item checked"><span class="hero-checkbox">✓</span>Page incident commander</li>
+                  <li class="hero-item"><span class="hero-checkbox"></span>Open bridge call</li>
+                </ul>
+              </div>
 
-            <div class="preview-section">
-              <h4 class="preview-section-title">MITIGATE</h4>
-              <ul class="preview-items">
-                <li class="preview-item"><span class="check"></span>Roll back to last known good</li>
-                <li class="preview-item"><span class="check"></span>Verify rollback in monitoring</li>
-              </ul>
+              <div class="hero-section-group">
+                <h4 class="hero-section-title">MITIGATE</h4>
+                <ul class="hero-checklist">
+                  <li class="hero-item"><span class="hero-checkbox"></span>Roll back to last known good</li>
+                  <li class="hero-item"><span class="hero-checkbox"></span>Verify rollback in monitoring</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
@@ -165,7 +175,7 @@
       <div class="capabilities-grid">
         <article class="capability-card">
           <div class="capability-icon">
-            <img src="assets/sync.png" alt="">
+            <img src="assets/sync.png" alt="Sync icon">
           </div>
           <h3 class="capability-title">Instant Sync</h3>
           <p class="capability-text">Changes persist immediately to the cloud. No save buttons, no lost progress. Your checklists are always current.</p>
@@ -173,7 +183,7 @@
 
         <article class="capability-card">
           <div class="capability-icon">
-            <img src="assets/md.png" alt="">
+            <img src="assets/md.png" alt="Markdown icon">
           </div>
           <h3 class="capability-title">Markdown Import</h3>
           <p class="capability-text">Import existing runbooks and procedures directly from .md files. Your team's knowledge, structured automatically.</p>
@@ -181,7 +191,7 @@
 
         <article class="capability-card">
           <div class="capability-icon">
-            <img src="assets/secure.png" alt="">
+            <img src="assets/secure.png" alt="Security icon">
           </div>
           <h3 class="capability-title">Secure by Default</h3>
           <p class="capability-text">Row-level security ensures complete data isolation. Every checklist belongs to its owner, enforced at the database level.</p>
@@ -259,14 +269,14 @@
             <span class="amount">$0</span>
             <span class="period">/month</span>
           </div>
-          <p class="pricing-description">For individual engineers and small teams</p>
+          <p>For individual engineers and small teams</p>
           <ul class="pricing-features">
             <li>Up to 10 checklists</li>
             <li>Markdown import</li>
             <li>Cloud sync</li>
             <li>Email support</li>
           </ul>
-          <a href="auth/index.html" class="btn-secondary full-width">Get Started</a>
+          <a href="auth/index.html" class="btn-secondary">Get Started</a>
         </div>
 
         <div class="pricing-card pricing-featured">
@@ -276,7 +286,7 @@
             <span class="amount">$12</span>
             <span class="period">/month per seat</span>
           </div>
-          <p class="pricing-description">For engineering teams that ship together</p>
+          <p>For engineering teams that ship together</p>
           <ul class="pricing-features">
             <li>Unlimited checklists</li>
             <li>Team collaboration</li>
@@ -285,7 +295,7 @@
             <li>Priority support</li>
             <li>SSO &amp; SAML</li>
           </ul>
-          <a href="auth/index.html" class="btn-primary full-width">Start Free Trial</a>
+          <a href="auth/index.html" class="btn-primary">Start Free Trial</a>
         </div>
       </div>
     </div>
@@ -295,7 +305,7 @@
   <section class="final-cta section-padding reveal" id="cta">
     <div class="container">
       <h2 class="section-heading">Start building checklists that stick.</h2>
-      <p class="cta-subtitle">Free to start. No credit card required.</p>
+      <p class="body-text">Free to start. No credit card required.</p>
       <a href="auth/index.html" class="btn-primary">Start Free</a>
     </div>
   </section>

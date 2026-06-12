@@ -33,7 +33,7 @@ function loop(){
   d.x+=(d.ox-d.x)*0.05;
   d.y+=(d.oy-d.y)*0.05;
 
-  ctx.fillStyle='rgba(122,162,247,.55)';
+  ctx.fillStyle='rgba(201,168,108,.4)';
   ctx.fillRect(d.x,d.y,1.5,1.5);
  }
  requestAnimationFrame(loop);
