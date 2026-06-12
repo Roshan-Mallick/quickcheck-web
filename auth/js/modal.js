@@ -101,6 +101,12 @@ function readMdFile(file) {
     return;
   }
 
+  const MAX_SIZE = 1 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    showToast('File too large. Maximum size is 1 MB.', 'error');
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const text     = e.target.result;

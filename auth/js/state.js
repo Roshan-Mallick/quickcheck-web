@@ -18,7 +18,6 @@ function initSupabase() {
     SUPABASE_URL  === 'https://YOUR_PROJECT.supabase.co' ||
     SUPABASE_ANON === 'YOUR_ANON_KEY_HERE'
   ) {
-    console.error('[Quickcheck] Supabase configuration required. Please update SUPABASE_URL and SUPABASE_ANON.');
     showAuthError('Supabase is not configured. Please set your API keys.');
     return false;
   }
@@ -27,7 +26,6 @@ function initSupabase() {
     sb = createClient(SUPABASE_URL, SUPABASE_ANON, SUPABASE_OPTIONS);
     return true;
   } catch (e) {
-    console.error('[Quickcheck] Supabase init failed:', e.message);
     showAuthError('Failed to initialize Supabase: ' + e.message);
     return false;
   }

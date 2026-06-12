@@ -90,7 +90,7 @@ function renderChecklist(cl) {
         <div class="meta-pill">${checked} / ${total} done</div>
       </div>
       <button class="btn-icon" title="Reset all" onclick="resetAll()">${ICON_RESET}</button>
-      <button class="btn-icon danger" title="Delete checklist" onclick="confirmDelete('${cl.id}')">${ICON_TRASH}</button>
+      <button class="btn-icon danger" title="Delete checklist" onclick="confirmDelete('${esc(cl.id)}')">${ICON_TRASH}</button>
     </div>
     <div class="sections-container" id="sections"></div>
   `;

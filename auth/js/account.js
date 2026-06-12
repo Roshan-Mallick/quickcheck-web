@@ -133,7 +133,6 @@ async function handleUpdateName(e) {
     showAccountMsg('Name updated successfully.');
     showToast('Profile updated.');
   } catch (err) {
-    console.error('Update name error:', err);
     showAccountMsg(err.message || 'Failed to update name.', 'error');
   } finally {
     btn.disabled    = false;
@@ -215,6 +214,15 @@ async function handleAccountPasswordReset() {
 
 // ─── Invite ───────────────────────────────────────────────────────────────
 
+function copyInviteLink() {
+  const url = window.location.origin + '/auth/';
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Invite link copied.');
+  }).catch(() => {
+    showToast('Failed to copy link.', 'error');
+  });
+}
+
 async function handleSendInvite(e) {
   e.preventDefault();
   const to = document.getElementById('invite-email-input').value.trim();
@@ -280,7 +288,7 @@ async function handleDeleteAccount() {
     const { data: { session } } = await sb.auth.getSession();
 
     const res = await fetch(
-      'https://gnzkwjzssumrnafqrmof.supabase.co/functions/v1/delete-account',
+      SUPABASE_URL + '/functions/v1/delete-account',
       {
         method: 'POST',
         headers: {

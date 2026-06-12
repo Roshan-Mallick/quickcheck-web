@@ -102,7 +102,7 @@ async function signInWithGoogle() {
     return;
   }
 
-  if (data?.url) window.location.assign(data.url);
+  if (data?.url && data.url.startsWith(SUPABASE_URL)) window.location.assign(data.url);
 }
 
 async function signInWithGitHub() {
@@ -123,7 +123,7 @@ async function signInWithGitHub() {
     return;
   }
 
-  if (data?.url) window.location.assign(data.url);
+  if (data?.url && data.url.startsWith(SUPABASE_URL)) window.location.assign(data.url);
 }
 // ─── Email/password login ─────────────────────────────────────────────────
 
@@ -141,21 +141,16 @@ async function handleLoginSubmit(e) {
   clearAuthMessages();
 
   try {
-    // Check email exists first to give a friendlier error
-    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
-    if (rpcError) { showAuthError('Something went wrong. Please try again.'); return; }
-    if (!emailExists) { showAuthError('Email does not exist. Please create a new account.'); return; }
-
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
 
     if (error) {
       const msg = error.message?.toLowerCase() || '';
       if (msg.includes('invalid login credentials')) {
-        showAuthError('Incorrect password.');
+        showAuthError('Invalid email or password.');
       } else if (msg.includes('email not confirmed')) {
         showAuthError('Please confirm your email before signing in. Check your inbox.');
       } else {
-        showAuthError(error.message || 'Authentication failed.');
+        showAuthError('Invalid email or password.');
       }
       return;
     }
@@ -191,10 +186,6 @@ async function handleRegisterSubmit(e) {
   clearAuthMessages();
 
   try {
-    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
-    if (rpcError) { showAuthError('Something went wrong. Please try again.'); return; }
-    if (emailExists) { showAuthError('This email is already registered. Please log in.'); return; }
-
     const { data, error } = await sb.auth.signUp({
       email,
       password: pass,
@@ -241,10 +232,6 @@ async function handleForgotSubmit(e) {
   clearAuthMessages();
 
   try {
-    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', { input_email: email });
-    if (rpcError) { showAuthError('Something went wrong. Please try again.'); return; }
-    if (!emailExists) { showAuthError('No account exists with this email address.'); return; }
-
     const { error } = await sb.auth.resetPasswordForEmail(email, {
       redirectTo: AUTH_REDIRECT(),
     });
@@ -252,7 +239,7 @@ async function handleForgotSubmit(e) {
 
     switchAuthView('forgot-sent');
   } catch (err) {
-    showAuthError(err.message || 'Failed to send reset link.');
+    showAuthError('Failed to send reset link. Please try again.');
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Send reset link';
