@@ -51,26 +51,80 @@
       reveals.forEach(el => observer.observe(el));
     }
 
-    /* ——— 4. Hero progress-bar animation ——— */
-    const progressFill = document.querySelector('.hero-progress-fill');
-    if (progressFill && !prefersReducedMotion) {
-      const TARGET = 75;
-      const DURATION = 1500;
-      const easeOutCubic = t => 1 - (1 - t) ** 3;
-      let start = null;
+    /* ——— 4. Hero checklist onboarding animation ——— */
+    (function animateHeroChecklist() {
+      const visual = document.querySelector('.hero-visual');
+      if (!visual) return;
 
-      const animate = (ts) => {
-        start ??= ts;
-        const elapsed = ts - start;
-        const progress = Math.min(elapsed / DURATION, 1);
-        progressFill.style.width = `${easeOutCubic(progress) * TARGET}%`;
-        if (progress < 1) requestAnimationFrame(animate);
-      };
+      const items = visual.querySelectorAll('.hero-item');
+      const fill = visual.querySelector('.hero-progress-fill');
+      const text = visual.querySelector('.hero-progress-text');
+      if (!items.length || !fill || !text) return;
 
-      requestAnimationFrame(animate);
-    } else if (progressFill) {
-      progressFill.style.width = '75%';
-    }
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const CHECK_ORDER = [0, 1, 2, 4, 5];
+      const FINAL_MAP = [true, true, true, false, true, true, false];
+
+      const START_PCT = 25, FINAL_PCT = 75;
+      const START_NUM = 4, FINAL_NUM = 12, DENOM = 16;
+      const DURATION = 3500, PAUSE = 4500;
+
+      let raf = null, timer = null;
+
+      function setChecked(item, checked) {
+        item.classList.toggle('checked', checked);
+        const cb = item.querySelector('.hero-checkbox');
+        if (cb) cb.textContent = checked ? '✓' : '';
+      }
+
+      function reset() {
+        items.forEach(i => setChecked(i, false));
+        fill.style.width = START_PCT + '%';
+        text.textContent = START_NUM + '/' + DENOM;
+      }
+
+      function finalize() {
+        items.forEach((i, idx) => setChecked(i, FINAL_MAP[idx]));
+        fill.style.width = FINAL_PCT + '%';
+        text.textContent = FINAL_NUM + '/' + DENOM;
+      }
+
+      function loop() {
+        if (raf) cancelAnimationFrame(raf);
+        if (timer) clearTimeout(timer);
+        reset();
+
+        const ease = t => 1 - Math.pow(1 - t, 3);
+        const start = performance.now();
+        let step = 0;
+
+        function tick(now) {
+          const t = Math.min((now - start) / DURATION, 1);
+          const e = ease(t);
+
+          fill.style.width = (START_PCT + (FINAL_PCT - START_PCT) * e) + '%';
+          text.textContent = Math.round(START_NUM + (FINAL_NUM - START_NUM) * e) + '/' + DENOM;
+
+          const itemProgress = t * CHECK_ORDER.length;
+          while (step < itemProgress) {
+            setChecked(items[CHECK_ORDER[step]], true);
+            step++;
+          }
+
+          if (t < 1) {
+            raf = requestAnimationFrame(tick);
+          } else {
+            finalize();
+            timer = setTimeout(loop, PAUSE);
+          }
+        }
+
+        raf = requestAnimationFrame(tick);
+      }
+
+      loop();
+    })();
 
     /* ——— 5. Mobile nav toggle ——— */
     const toggle = document.querySelector('.nav-toggle');
