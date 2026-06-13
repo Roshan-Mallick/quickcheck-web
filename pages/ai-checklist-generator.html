@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Checklist Generator — Quickcheck</title>
+  <link rel="icon" type="image/png" href="../assets/logo.png">
+  <meta name="description" content="Copy a ready-to-use ChatGPT prompt template for generating structured engineering checklists.">
+  <meta name="theme-color" content="#050505">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body class="ai-prompt-page">
+
+  <nav class="nav" aria-label="Primary navigation">
+    <div class="nav-left">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+        <span class="nav-logo-text">Quickcheck</span>
+      </a>
+      <a href="../index.html" class="nav-home">Home</a>
+    </div>
+    <a href="../auth/index.html" class="nav-cta">Start Free</a>
+  </nav>
+
+  <div class="container">
+
+    <div class="ai-prompt-hero">
+      <h1>AI Checklist Prompt</h1>
+      <p>Use this prompt template with ChatGPT to generate structured, reusable engineering checklists. Copy it, paste it into ChatGPT, and describe your task.</p>
+    </div>
+
+    <div class="ai-prompt-block">
+      <button class="ai-copy-btn" id="copy-prompt-btn" aria-label="Copy prompt">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="4.5" width="9" height="9" rx="1.5"/>
+          <path d="M11.5 3V2.5A1.5 1.5 0 0 0 10 1H3.5A1.5 1.5 0 0 0 2 2.5v5A1.5 1.5 0 0 0 3.5 9H4"/>
+        </svg>
+      </button>
+      <pre id="prompt-display">You are an Engineering Checklist Generator.
+
+Workflow:
+
+Step 1:
+When a user starts a conversation, do NOT generate a checklist.
+
+Always reply with exactly:
+
+"Give me the context for the checklist you want to create."
+
+Step 2:
+Wait for the user's response.
+
+Step 3:
+Analyze the provided context and generate a structured engineering checklist.
+
+Output Requirements:
+
+* Generate the checklist in valid Markdown format.
+* Use actionable checkbox items (`- [ ]`).
+* Organize items into logical sections with Markdown headings.
+* Include only tasks that are relevant to the provided context.
+* Do not add unrelated recommendations.
+* If the context is too vague, ask only the minimum follow-up question required.
+
+File Generation Requirements:
+
+* Do NOT display the checklist directly in chat unless explicitly requested.
+* Automatically create a downloadable Markdown file.
+* Name the file using a sanitized version of the user context.
+
+Checklist Quality Requirements:
+
+* Break work into preparation, implementation, validation, testing, deployment, monitoring, and rollback sections when applicable.
+* Ensure each checklist item is specific and verifiable.
+* Avoid vague tasks such as "check everything" or "test app".
+* Prefer implementation-ready tasks.</pre>
+    </div>
+
+    <div class="ai-prompt-actions">
+      <button class="btn-primary" id="open-chatgpt-btn">Open ChatGPT</button>
+      <button class="btn-secondary" id="copy-prompt-text-btn">Copy Prompt</button>
+      <a href="../index.html" class="ai-link-btn">Open Quickcheck</a>
+      <span class="ai-prompt-status" id="status"></span>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="nav-logo">
+            <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+            <span class="nav-logo-text">Quickcheck</span>
+          </a>
+          <p>Persistent checklists for engineering teams.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="../index.html#capabilities">Features</a></li>
+            <li><a href="../index.html#pricing">Pricing</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="ai-checklist-generator.html">AI Checklist Generator</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="../legal/privacy.html">Privacy</a></li>
+            <li><a href="../legal/terms.html">Terms</a></li>
+            <li><a href="../legal/security.html">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="footer-mobile">
+    <div class="container">
+      <div class="fm-brand">
+        <a href="../index.html" class="nav-logo">
+          <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+          <span class="nav-logo-text">Quickcheck</span>
+        </a>
+        <p>Persistent checklists for engineering teams.</p>
+      </div>
+      <div class="fm-accordion">
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="true">
+            Product
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content is-open">
+            <ul>
+              <li><a href="../index.html#capabilities">Features</a></li>
+              <li><a href="../index.html#pricing">Pricing</a></li>
+              <li><a href="changelog.html">Changelog</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="false">
+            Resources
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content">
+            <ul>
+              <li><a href="docs.html">Documentation</a></li>
+              <li><a href="ai-checklist-generator.html">AI Checklist Generator</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="false">
+            Legal
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content">
+            <ul>
+              <li><a href="../legal/privacy.html">Privacy</a></li>
+              <li><a href="../legal/terms.html">Terms</a></li>
+              <li><a href="../legal/security.html">Security</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="fm-bottom">
+        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div id="bg-gradients" aria-hidden="true"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const promptDisplay = document.getElementById('prompt-display');
+      const openChatBtn = document.getElementById('open-chatgpt-btn');
+      const copyPromptBtn = document.getElementById('copy-prompt-btn');
+      const copyPromptTextBtn = document.getElementById('copy-prompt-text-btn');
+      const statusEl = document.getElementById('status');
+
+      const PROMPT_TEXT = promptDisplay.textContent;
+
+      function showStatus(msg, isError) {
+        statusEl.textContent = msg;
+        statusEl.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+      }
+
+      async function copyPrompt() {
+        try {
+          await navigator.clipboard.writeText(PROMPT_TEXT);
+          showStatus('Prompt copied.');
+          return true;
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = PROMPT_TEXT;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (ok) {
+            showStatus('Prompt copied.');
+            return true;
+          }
+          showStatus('Failed to copy. Select and copy manually.', true);
+          return false;
+        }
+      }
+
+      openChatBtn.addEventListener('click', async () => {
+        const copied = await copyPrompt();
+        if (copied) {
+          showStatus('Prompt copied. Paste it into ChatGPT to start.');
+        }
+        window.open('https://chat.openai.com', '_blank', 'noopener,noreferrer');
+      });
+
+      copyPromptBtn.addEventListener('click', copyPrompt);
+      copyPromptTextBtn.addEventListener('click', copyPrompt);
+
+      const nav = document.querySelector('.nav');
+      if (nav) {
+        const SCROLL_THRESHOLD = 60;
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            requestAnimationFrame(() => {
+              nav.classList.toggle('scrolled', window.scrollY > SCROLL_THRESHOLD);
+              ticking = false;
+            });
+            ticking = true;
+          }
+        }, { passive: true });
+      }
+
+      /* ——— Mobile accordion footer ——— */
+      const accordion = document.querySelector('.fm-accordion');
+      if (accordion) {
+        accordion.addEventListener('click', (e) => {
+          const trigger = e.target.closest('.fm-trigger');
+          if (!trigger) return;
+
+          const group = trigger.closest('.fm-group');
+          if (!group) return;
+
+          const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+          const content = trigger.nextElementSibling;
+
+          accordion.querySelectorAll('.fm-group').forEach(g => {
+            const btn = g.querySelector('.fm-trigger');
+            const panel = g.querySelector('.fm-content');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+            if (panel) panel.classList.remove('is-open');
+          });
+
+          if (!isExpanded) {
+            trigger.setAttribute('aria-expanded', 'true');
+            if (content && content.classList.contains('fm-content')) {
+              content.classList.add('is-open');
+            }
+          }
+        });
+      }
+    })();
+  </script>
+
+</body>
+</html>

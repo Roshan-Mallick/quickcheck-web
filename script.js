@@ -160,5 +160,36 @@
       // Set initial aria state
       toggle.setAttribute('aria-expanded', 'false');
     }
+
+    /* ——— 6. Mobile accordion footer ——— */
+    const accordion = document.querySelector('.fm-accordion');
+    if (accordion) {
+      accordion.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.fm-trigger');
+        if (!trigger) return;
+
+        const group = trigger.closest('.fm-group');
+        if (!group) return;
+
+        const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+        const content = trigger.nextElementSibling;
+
+        // Close all groups first
+        accordion.querySelectorAll('.fm-group').forEach(g => {
+          const btn = g.querySelector('.fm-trigger');
+          const panel = g.querySelector('.fm-content');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+          if (panel) panel.classList.remove('is-open');
+        });
+
+        // If the clicked group was collapsed, open it
+        if (!isExpanded) {
+          trigger.setAttribute('aria-expanded', 'true');
+          if (content && content.classList.contains('fm-content')) {
+            content.classList.add('is-open');
+          }
+        }
+      });
+    }
   });
 })();
