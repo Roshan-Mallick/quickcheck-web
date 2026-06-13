@@ -233,6 +233,13 @@
         </div>
         <span>Quickcheck</span>
       </div>
+      <button type="button" class="app-topbar-search" onclick="openSearch()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        Search
+      </button>
       <button type="button" class="app-topbar-new" onclick="showNewListModal()">New</button>
     </header>
 
@@ -259,6 +266,14 @@
             </svg>
             New checklist
           </button>
+          <div class="sidebar-search">
+            <svg class="sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" class="sidebar-search-input" id="sidebar-search-input" placeholder="Search checklists…" autocomplete="off" spellcheck="false" />
+            <div class="sidebar-search-dropdown" id="sidebar-search-dropdown"></div>
+          </div>
         </div>
         <div class="sidebar-section-label">My checklists</div>
         <div class="sidebar-lists" id="sidebar-lists"></div>
@@ -546,6 +561,28 @@
 
   <!-- ─── TOASTS ───────────────────────────────────────────────────── -->
   <div class="toast-container" id="toast-container"></div>
+
+  <!-- ─── SEARCH MODAL ──────────────────────────────────────────────── -->
+  <div class="search-overlay" id="search-modal">
+    <div class="search-modal">
+      <div class="search-field">
+        <svg class="search-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Search checklists…" autocomplete="off" spellcheck="false" />
+        <span class="search-kbd-hint" id="search-kbd-hint">ESC</span>
+      </div>
+      <div class="search-results" id="search-results"></div>
+      <div class="search-empty" id="search-empty">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <p>No results for "<span id="search-query-display"></span>"</p>
+      </div>
+    </div>
+  </div>
 
   <!--
     ─── SCRIPT LOADING ORDER ────────────────────────────────────────────

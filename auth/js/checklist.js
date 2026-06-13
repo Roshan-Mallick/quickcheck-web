@@ -48,6 +48,16 @@ function renderSidebar() {
     item.onclick = () => loadChecklist(cl.id);
     el.appendChild(item);
   }
+
+  if (currentSearchQuery) {
+    var items = el.querySelectorAll('.list-item');
+    for (var i = 0; i < items.length; i++) {
+      var name = items[i].querySelector('.list-item-name');
+      if (name && name.textContent.toLowerCase().indexOf(currentSearchQuery) === -1) {
+        items[i].style.display = 'none';
+      }
+    }
+  }
 }
 
 function loadChecklist(id) {
@@ -87,10 +97,14 @@ function renderChecklist(cl) {
                  onkeydown="if(event.key==='Enter') saveTitle()"
                  style="display:none" />
         </h2>
+      </div>
+      <div class="meta-actions">
+        <div class="meta-action-buttons">
+          <button class="btn-icon" title="Reset all" onclick="resetAll()">${ICON_RESET}</button>
+          <button class="btn-icon danger" title="Delete checklist" onclick="confirmDelete('${esc(cl.id)}')">${ICON_TRASH}</button>
+        </div>
         <div class="meta-pill">${checked} / ${total} done</div>
       </div>
-      <button class="btn-icon" title="Reset all" onclick="resetAll()">${ICON_RESET}</button>
-      <button class="btn-icon danger" title="Delete checklist" onclick="confirmDelete('${esc(cl.id)}')">${ICON_TRASH}</button>
     </div>
     <div class="sections-container" id="sections"></div>
   `;
@@ -306,3 +320,449 @@ function confirmDelete(id) {
     }
   });
 }
+
+// ─── Search ────────────────────────────────────────────────────────────────
+
+let currentSearchQuery = '';
+
+function highlightText(text, query) {
+  var idx = text.toLowerCase().indexOf(query);
+  if (idx === -1) return esc(text);
+  return esc(text.slice(0, idx)) + '<mark>' + esc(text.slice(idx, idx + query.length)) + '</mark>' + esc(text.slice(idx + query.length));
+}
+
+function doSidebarSearch() {
+  var q = currentSearchQuery;
+  var dropdown = document.getElementById('sidebar-search-dropdown');
+  dropdown.innerHTML = '';
+  dropdown.classList.remove('open');
+
+  renderSidebar();
+
+  if (!q) {
+    clearSearchHighlights();
+    return;
+  }
+
+  var results = [];
+
+  for (var ci = 0; ci < checklists.length; ci++) {
+    if (checklists[ci].title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(checklists[ci].title, q) });
+    }
+  }
+
+  var cl = getActive();
+  if (cl) {
+    for (var si = 0; si < cl.data.length; si++) {
+      var section = cl.data[si];
+      if (section.title.toLowerCase().indexOf(q) !== -1) {
+        results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
+      }
+      for (var ii = 0; ii < section.items.length; ii++) {
+        var item = section.items[ii];
+        if (item.label.toLowerCase().indexOf(q) !== -1) {
+          results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+        }
+      }
+    }
+    applySearchHighlights(q);
+  }
+
+  if (results.length === 0) {
+    dropdown.innerHTML = '<div class="search-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><p>No results for "' + esc(q) + '"</p></div>';
+    dropdown.classList.add('open');
+    return;
+  }
+
+  var html = '';
+
+  var checklistResults = results.filter(function(r) { return r.type === 'checklist'; });
+  if (checklistResults.length) {
+    html += '<div class="search-result-group-label">Checklist</div>';
+    for (var i = 0; i < checklistResults.length; i++) {
+      var r = checklistResults[i];
+      html += '<div class="search-result-item" data-ci="' + r.ci + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+    }
+  }
+
+  var sectionResults = results.filter(function(r) { return r.type === 'section'; });
+  if (sectionResults.length) {
+    html += '<div class="search-result-group-label">Sections</div>';
+    for (var i = 0; i < sectionResults.length; i++) {
+      var r = sectionResults[i];
+      html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+    }
+  }
+
+  var itemResults = results.filter(function(r) { return r.type === 'item'; });
+  if (itemResults.length) {
+    var grouped = {};
+    for (var i = 0; i < itemResults.length; i++) {
+      var r = itemResults[i];
+      if (!grouped[r.sectionTitle]) grouped[r.sectionTitle] = [];
+      grouped[r.sectionTitle].push(r);
+    }
+    var sectionNames = Object.keys(grouped);
+    for (var s = 0; s < sectionNames.length; s++) {
+      html += '<div class="search-result-group-label">' + esc(sectionNames[s]) + '</div>';
+      var items = grouped[sectionNames[s]];
+      for (var j = 0; j < items.length; j++) {
+        var r = items[j];
+        html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+      }
+    }
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.classList.add('open');
+
+  var resultItems = dropdown.querySelectorAll('.search-result-item');
+  for (var i = 0; i < resultItems.length; i++) {
+    resultItems[i].addEventListener('click', function() {
+      var type = this.dataset.type;
+      var si = this.dataset.si !== undefined ? parseInt(this.dataset.si) : -1;
+      var ii = this.dataset.ii !== undefined ? parseInt(this.dataset.ii) : -1;
+      var ci = this.dataset.ci !== undefined ? parseInt(this.dataset.ci) : -1;
+      handleSearchResult(type, si, ii, ci);
+    });
+  }
+
+  if (resultItems.length) {
+    resultItems[0].classList.add('highlighted');
+  }
+}
+
+function applySearchHighlights(q) {
+  var cl = getActive();
+  if (!cl) return;
+
+  for (var si = 0; si < cl.data.length; si++) {
+    var section = cl.data[si];
+    if (section.title.toLowerCase().indexOf(q) !== -1) {
+      var secEl = document.getElementById('sec-title-' + si);
+      if (secEl) secEl.innerHTML = highlightText(section.title, q);
+    }
+    for (var ii = 0; ii < section.items.length; ii++) {
+      var item = section.items[ii];
+      if (item.label.toLowerCase().indexOf(q) !== -1) {
+        var lblEl = document.getElementById('lbl-' + si + '-' + ii);
+        if (lblEl) lblEl.innerHTML = highlightText(item.label, q);
+      }
+    }
+  }
+}
+
+function clearSearchHighlights() {
+  var cl = getActive();
+  if (!cl) return;
+
+  for (var si = 0; si < cl.data.length; si++) {
+    var section = cl.data[si];
+    var secEl = document.getElementById('sec-title-' + si);
+    if (secEl) secEl.textContent = section.title;
+
+    for (var ii = 0; ii < section.items.length; ii++) {
+      var item = section.items[ii];
+      var lblEl = document.getElementById('lbl-' + si + '-' + ii);
+      if (lblEl) lblEl.textContent = item.label;
+    }
+  }
+}
+
+function closeAllSearch() {
+  var sidebarInput = document.getElementById('sidebar-search-input');
+  if (sidebarInput) {
+    sidebarInput.value = '';
+    var sidebarDropdown = document.getElementById('sidebar-search-dropdown');
+    sidebarDropdown.innerHTML = '';
+    sidebarDropdown.classList.remove('open');
+  }
+
+  var modal = document.getElementById('search-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-results').innerHTML = '';
+    document.getElementById('search-empty').style.display = 'none';
+  }
+
+  currentSearchQuery = '';
+  clearSearchHighlights();
+  renderSidebar();
+}
+
+function handleSearchResult(type, si, ii, ci) {
+  closeAllSearch();
+
+  if (type === 'checklist') {
+    var cl = checklists[ci];
+    if (cl) loadChecklist(cl.id);
+    return;
+  }
+
+  if (type === 'section') {
+    var el = document.querySelector('.section-header[data-si="' + si + '"]');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('search-highlight-flash');
+      setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
+    }
+    return;
+  }
+
+  if (type === 'item') {
+    var el = document.querySelector('[data-si="' + si + '"][data-ii="' + ii + '"]');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('search-highlight-flash');
+      setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
+    }
+  }
+}
+
+// ─── Mobile modal search ────────────────────────────────────────────────────
+
+function openSearch() {
+  document.getElementById('search-modal').classList.add('open');
+  var input = document.getElementById('search-input');
+  input.value = '';
+  var container = document.getElementById('search-results');
+  container.innerHTML = '';
+  document.getElementById('search-empty').style.display = 'none';
+  setTimeout(function() { input.focus(); }, 50);
+}
+
+function closeSearch() {
+  document.getElementById('search-modal').classList.remove('open');
+  document.getElementById('search-input').blur();
+}
+
+function doModalSearch() {
+  var q = document.getElementById('search-input').value.trim().toLowerCase();
+  var container = document.getElementById('search-results');
+  var empty = document.getElementById('search-empty');
+
+  if (!q) {
+    container.innerHTML = '';
+    empty.style.display = 'none';
+    return;
+  }
+
+  var cl = getActive();
+  if (!cl) {
+    empty.style.display = 'flex';
+    document.getElementById('search-query-display').textContent = q;
+    return;
+  }
+
+  var results = [];
+
+  for (var ci = 0; ci < checklists.length; ci++) {
+    if (checklists[ci].title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(checklists[ci].title, q) });
+    }
+  }
+
+  for (var si = 0; si < cl.data.length; si++) {
+    var section = cl.data[si];
+    if (section.title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
+    }
+    for (var ii = 0; ii < section.items.length; ii++) {
+      var item = section.items[ii];
+      if (item.label.toLowerCase().indexOf(q) !== -1) {
+        results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    container.innerHTML = '';
+    document.getElementById('search-query-display').textContent = q;
+    empty.style.display = 'flex';
+    return;
+  }
+
+  empty.style.display = 'none';
+  var html = '';
+
+  var checklistResults = results.filter(function(r) { return r.type === 'checklist'; });
+  if (checklistResults.length) {
+    html += '<div class="search-result-group-label">Checklist</div>';
+    for (var i = 0; i < checklistResults.length; i++) {
+      var r = checklistResults[i];
+      html += '<div class="search-result-item" data-ci="' + (r.ci !== undefined ? r.ci : -1) + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+    }
+  }
+
+  var sectionResults = results.filter(function(r) { return r.type === 'section'; });
+  if (sectionResults.length) {
+    html += '<div class="search-result-group-label">Sections</div>';
+    for (var i = 0; i < sectionResults.length; i++) {
+      var r = sectionResults[i];
+      html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+    }
+  }
+
+  var itemResults = results.filter(function(r) { return r.type === 'item'; });
+  if (itemResults.length) {
+    var grouped = {};
+    for (var i = 0; i < itemResults.length; i++) {
+      var r = itemResults[i];
+      if (!grouped[r.sectionTitle]) grouped[r.sectionTitle] = [];
+      grouped[r.sectionTitle].push(r);
+    }
+    var sectionNames = Object.keys(grouped);
+    for (var s = 0; s < sectionNames.length; s++) {
+      html += '<div class="search-result-group-label">' + esc(sectionNames[s]) + '</div>';
+      var items = grouped[sectionNames[s]];
+      for (var j = 0; j < items.length; j++) {
+        var r = items[j];
+        html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+      }
+    }
+  }
+
+  container.innerHTML = html;
+
+  var resultItems = container.querySelectorAll('.search-result-item');
+  for (var i = 0; i < resultItems.length; i++) {
+    resultItems[i].addEventListener('click', function() {
+      var type = this.dataset.type;
+      var si = this.dataset.si !== undefined ? parseInt(this.dataset.si) : -1;
+      var ii = this.dataset.ii !== undefined ? parseInt(this.dataset.ii) : -1;
+      var ci = this.dataset.ci !== undefined ? parseInt(this.dataset.ci) : -1;
+      handleSearchResult(type, si, ii, ci);
+    });
+  }
+
+  if (resultItems.length) {
+    resultItems[0].classList.add('highlighted');
+  }
+}
+
+// ─── Event listeners ────────────────────────────────────────────────────────
+
+document.getElementById('sidebar-search-input').addEventListener('input', function() {
+  currentSearchQuery = this.value.trim().toLowerCase();
+  doSidebarSearch();
+});
+
+document.getElementById('sidebar-search-input').addEventListener('keydown', function(e) {
+  var dropdown = document.getElementById('sidebar-search-dropdown');
+  var items = dropdown.querySelectorAll('.search-result-item');
+
+  if (e.key === 'Escape') {
+    this.value = '';
+    currentSearchQuery = '';
+    dropdown.innerHTML = '';
+    dropdown.classList.remove('open');
+    clearSearchHighlights();
+    renderSidebar();
+    this.blur();
+    return;
+  }
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!items.length) return;
+    e.preventDefault();
+    var current = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].classList.contains('highlighted')) { current = i; break; }
+    }
+    items.forEach(function(el) { el.classList.remove('highlighted'); });
+    var next = e.key === 'ArrowDown' ? current + 1 : (current <= 0 ? items.length - 1 : current - 1);
+    if (next < 0) next = 0;
+    if (next >= items.length) next = items.length - 1;
+    items[next].classList.add('highlighted');
+    items[next].scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    if (!items.length) return;
+    e.preventDefault();
+    var target = dropdown.querySelector('.search-result-item.highlighted') || items[0];
+    var type = target.dataset.type;
+    var si = target.dataset.si !== undefined ? parseInt(target.dataset.si) : -1;
+    var ii = target.dataset.ii !== undefined ? parseInt(target.dataset.ii) : -1;
+    var ci = target.dataset.ci !== undefined ? parseInt(target.dataset.ci) : -1;
+    handleSearchResult(type, si, ii, ci);
+  }
+});
+
+document.addEventListener('click', function(e) {
+  var dropdown = document.getElementById('sidebar-search-dropdown');
+  if (!dropdown.classList.contains('open')) return;
+  if (e.target.closest('.sidebar-search')) return;
+  dropdown.classList.remove('open');
+});
+
+function ensureExpanded(si, callback) {
+  var section = document.querySelector('.section-header[data-si="' + si + '"]');
+  if (section && section.classList.contains('collapsed')) {
+    toggleSection2(si);
+    setTimeout(callback, 50);
+  } else {
+    callback();
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    var sidebarInput = document.getElementById('sidebar-search-input');
+    if (sidebarInput.offsetParent !== null) {
+      sidebarInput.focus();
+    } else {
+      openSearch();
+    }
+  }
+});
+
+document.getElementById('search-input').addEventListener('input', function() {
+  doModalSearch();
+});
+
+document.getElementById('search-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeSearch();
+});
+
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  var container = document.getElementById('search-results');
+  var items = container.querySelectorAll('.search-result-item');
+
+  if (e.key === 'Escape') {
+    closeSearch();
+    e.preventDefault();
+    return;
+  }
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (!items.length) return;
+    e.preventDefault();
+    var current = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].classList.contains('highlighted')) { current = i; break; }
+    }
+    items.forEach(function(el) { el.classList.remove('highlighted'); });
+    var next = e.key === 'ArrowDown' ? current + 1 : (current <= 0 ? items.length - 1 : current - 1);
+    if (next < 0) next = 0;
+    if (next >= items.length) next = items.length - 1;
+    items[next].classList.add('highlighted');
+    items[next].scrollIntoView({ block: 'nearest' });
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    if (!items.length) return;
+    e.preventDefault();
+    var target = container.querySelector('.search-result-item.highlighted') || items[0];
+    var type = target.dataset.type;
+    var si = target.dataset.si !== undefined ? parseInt(target.dataset.si) : -1;
+    var ii = target.dataset.ii !== undefined ? parseInt(target.dataset.ii) : -1;
+    var ci = target.dataset.ci !== undefined ? parseInt(target.dataset.ci) : -1;
+    handleSearchResult(type, si, ii, ci);
+  }
+});
