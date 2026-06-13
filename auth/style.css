@@ -629,14 +629,20 @@ body {
   margin-bottom: 36px; flex-wrap: wrap;
   padding-bottom: 28px; border-bottom: 1px solid var(--border);
 }
-.meta-content { flex: 1; min-width: 0; }
+.meta-content {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+}
 .checklist-title {
   font-size: clamp(24px, 4vw, 32px); font-weight: 700;
-  letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 12px;
+  letter-spacing: -0.04em; line-height: 1.1;
+  flex: 1; min-width: 0; overflow: hidden;
 }
 .checklist-title span {
   cursor: text; border-radius: 6px; padding: 2px 4px; margin-left: -4px;
-  transition: background 0.15s; display: inline-block;
+  transition: background 0.15s;
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .checklist-title span:hover { background: var(--surface2); }
 
@@ -663,7 +669,7 @@ body {
   font-size: 11px; font-family: var(--mono); color: var(--text2);
   background: var(--surface2); padding: 5px 12px;
   border-radius: 5px; border: 1px solid var(--border); display: inline-block;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.01em; flex-shrink: 0;
 }
 .meta-pill.done { color: var(--green); background: var(--green-dim); border-color: rgba(109,175,130,0.2); }
 
@@ -1109,13 +1115,26 @@ body {
   .account-password-actions .btn-primary,
   .account-password-actions .btn-outline { width: 100%; justify-content: center; }
 
-  .checklist-meta { flex-direction: column; }
-
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions button { width: 100%; justify-content: center; }
 
   .account-modal-footer { flex-direction: column-reverse; gap: 10px; }
   .account-modal-footer button { width: 100%; text-align: center; justify-content: center; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — CHECKLIST MOBILE (< 768px)
+   Title + badge full width, action buttons in their own row
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .progress-bar, .progress-bar-wrap { margin-bottom: 0; }
+  .checklist-meta { gap: 14px; }
+  .meta-content { flex: 0 0 100%; }
+  .btn-icon {
+    min-width: 44px; height: 44px;
+    padding: 10px 14px;
+  }
 }
 
 
