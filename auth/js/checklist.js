@@ -10,6 +10,7 @@ function createBlankChecklist() {
   persistChecklist(cl);
   renderSidebar();
   loadChecklist(cl.id);
+  setTimeout(() => startEditTitle(), 50);
 }
 
 function importChecklist() {
@@ -91,7 +92,7 @@ function renderChecklist(cl) {
       <div class="progress-bar"><div class="progress-bar-fill" style="width: ${pct}%"></div></div>
       <div class="meta-content">
         <h2 class="checklist-title">
-          <span id="checklist-title-display" ondblclick="startEditTitle()">${esc(cl.title)}</span>
+          <span id="checklist-title-display" onclick="startEditTitle()">${esc(cl.title)}</span>
           <input class="checklist-title-input" id="checklist-title-input" value="${esc(cl.title)}"
                  onblur="saveTitle()"
                  onkeydown="if(event.key==='Enter') saveTitle()"
@@ -127,7 +128,7 @@ function renderSections(cl) {
     secDiv.innerHTML = `
       <div class="section-header" data-si="${si}">
         <h3 class="section-title">
-          <span id="sec-title-${si}" ondblclick="startEditSection(${si})">${esc(section.title)}</span>
+          <span id="sec-title-${si}" onclick="startEditSection(${si})">${esc(section.title)}</span>
           <input class="section-title-input" id="sec-input-${si}" value="${esc(section.title)}"
                  onblur="saveSection(${si})"
                  onkeydown="if(event.key==='Enter') saveSection(${si})"
@@ -157,7 +158,7 @@ function createItemRow(cl, si, ii) {
   row.setAttribute('data-ii', ii);
   row.innerHTML = `
     <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleItem(${si}, ${ii}, this.checked)" />
-    <span class="item-label" id="lbl-${si}-${ii}" ondblclick="startEditItem(${si},${ii})">${esc(item.label)}</span>
+    <span class="item-label" id="lbl-${si}-${ii}" onclick="event.preventDefault(); startEditItem(${si},${ii})">${esc(item.label)}</span>
     <input class="item-label-input" id="inp-${si}-${ii}" value="${esc(item.label)}"
            onblur="saveItem(${si}, ${ii})"
            onkeydown="if(event.key==='Enter') saveItem(${si}, ${ii})"

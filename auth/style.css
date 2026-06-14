@@ -31,7 +31,7 @@
   --ease:        cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius); }
 html { -webkit-text-size-adjust: 100%; }
 html, body { height: 100%; }
 body {
@@ -737,9 +737,13 @@ body {
 /* inline title editing input */
 .checklist-title-input, .checklist-title input {
   font-size: clamp(22px, 4vw, 28px); font-weight: 700; letter-spacing: -0.03em;
-  background: var(--surface2); border: 1px solid rgba(201,168,108,0.35);
+  background: var(--surface2); border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radius); padding: 4px 8px; margin-left: -4px;
   outline: none; width: 100%; font-family: var(--sans); color: var(--text);
+  transition: border-color 200ms ease;
+}
+.checklist-title-input:focus-visible, .checklist-title input:focus-visible {
+  outline: none; border-color: rgba(255,255,255,0.25);
 }
 
 /* ── Command Palette Search ──────────────────────────────────── */
@@ -913,8 +917,12 @@ body {
 }
 .section-title-input {
   font-size: 12px; font-weight: 600; color: var(--text2);
-  background: transparent; border: none; border-bottom: 1px solid var(--accent);
+  background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.15);
   outline: none; flex: 1; padding: 2px 0; font-family: var(--sans);
+  transition: border-color 200ms ease;
+}
+.section-title-input:focus-visible {
+  outline: none; border-bottom-color: rgba(255,255,255,0.25);
 }
 .section-count { font-family: var(--mono); font-size: 10px; color: var(--text3); flex-shrink: 0; letter-spacing: 0.02em; }
 .items { padding: 2px 0 12px; }
@@ -970,9 +978,12 @@ body {
 }
 .item-label-input {
   flex: 1; font-size: 14px; color: var(--text);
-  background: transparent; border: none; border-bottom: 1px solid var(--accent);
+  background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.15);
   outline: none; line-height: 1.5; padding: 0; min-width: 0; width: 100%;
-  font-family: var(--sans);
+  font-family: var(--sans); transition: border-color 200ms ease;
+}
+.item-label-input:focus-visible {
+  outline: none; border-bottom-color: rgba(255,255,255,0.25);
 }
 /* delete button — only visible on hover */
 .item-del {
@@ -1359,13 +1370,30 @@ body {
    Title + badge full width, action buttons in their own row
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  .progress-bar, .progress-bar-wrap { margin-bottom: 0; }
-  .checklist-meta { gap: 14px; }
-  .meta-content { flex: 0 0 100%; }
+  .checklist-meta { gap: 10px; }
+  .meta-actions {
+    order: 1;
+    flex: 0 0 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .meta-content {
+    order: 2;
+    flex: 0 0 100%;
+    margin-top: 6px;
+  }
+  .progress-bar, .progress-bar-wrap {
+    order: 3;
+    margin-bottom: 0;
+    margin-top: 4px;
+  }
   .btn-icon {
     min-width: 44px; height: 44px;
     padding: 10px 14px;
   }
+  .meta-pill { flex-shrink: 0; }
 }
 
 
@@ -1375,6 +1403,8 @@ body {
 @media (max-width: 380px) {
   .app-topbar { padding: 0 12px; gap: 8px; }
   .sidebar { width: min(272px, 88vw) !important; }
+  .meta-actions { flex-wrap: wrap; row-gap: 6px; }
+  .meta-pill { margin-left: 0; }
 }
 
 
