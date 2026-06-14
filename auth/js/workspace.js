@@ -55,6 +55,7 @@ async function deleteWorkspace(wsId) {
   if (error) { showToast(error.message, 'error'); return; }
   if (activeWorkspace && activeWorkspace.id === wsId) {
     activeWorkspace = null;
+    localStorage.removeItem(WS_STORAGE_KEY);
     sharedChecklists = [];
     await loadChecklists();
     renderSidebar();
@@ -110,13 +111,29 @@ async function switchToPersonal() {
 async function loadSharedChecklists(wsId) {
   if (!sb || !currentUser) return;
   if (DEV) console.log('[workspace] loadSharedChecklists for ws:', wsId);
+  // Direct query to workspace_checklists may fail with 42501 if RLS is missing.
+  // Try it first; fall back to localStorage cache on permission error.
   const { data: links, error } = await sb
     .from('workspace_checklists')
     .select('id, checklist_id, shared_by, created_at')
     .eq('workspace_id', wsId);
-  if (error) { console.error('[workspace] loadSharedChecklists error:', error); return; }
-  if (!links || !links.length) { sharedChecklists = []; if (DEV) console.log('[workspace] no shared checklists found'); return; }
-  const ids = links.map(l => l.checklist_id);
+  if (error) {
+    if (error.code === '42501') {
+      if (DEV) console.log('[workspace] workspace_checklists 42501, using localStorage cache');
+    } else {
+      console.error('[workspace] loadSharedChecklists error:', error);
+      return;
+    }
+  }
+  let linkData = links;
+  if (!linkData && error?.code === '42501') {
+    const cached = localStorage.getItem('quickcheck_ws_checklists_' + wsId);
+    if (cached) {
+      try { linkData = JSON.parse(cached); } catch (_) { linkData = null; }
+    }
+  }
+  if (!linkData || !linkData.length) { sharedChecklists = []; if (DEV) console.log('[workspace] no shared checklists found'); return; }
+  const ids = linkData.map(l => l.checklist_id);
   if (DEV) console.log('[workspace] shared checklist ids:', ids);
   const { data: checklistsData, error: clError } = await sb
     .from('checklists')
@@ -125,7 +142,7 @@ async function loadSharedChecklists(wsId) {
   if (clError) { console.error('[workspace] loadSharedChecklists (checklists):', clError); return; }
   const checklistMap = {};
   for (const cl of (checklistsData || [])) checklistMap[cl.id] = cl;
-  sharedChecklists = links
+  sharedChecklists = linkData
     .filter(l => checklistMap[l.checklist_id])
     .map(l => ({
       id: l.checklist_id,
@@ -182,7 +199,7 @@ async function loadWorkspaceMembers(wsId) {
   if (!sb || !currentUser) return;
   const { data, error } = await sb
     .from('workspace_members')
-    .select('id, user_id, role, status, created_at, users!inner(email, raw_user_meta_data)')
+    .select('id, user_id, role, status, created_at')
     .eq('workspace_id', wsId);
   if (error) { console.error('loadWorkspaceMembers:', error); workspaceMembers = []; return; }
   workspaceMembers = (data || []).map(m => ({
@@ -190,8 +207,8 @@ async function loadWorkspaceMembers(wsId) {
     user_id: m.user_id,
     role: m.role,
     status: m.status,
-    email: m.users.email || '',
-    name: m.users.raw_user_meta_data?.full_name || m.users.email?.split('@')[0] || 'Unknown',
+    email: m.user_id === currentUser?.id ? (currentUser?.email || '') : '',
+    name: m.user_id === currentUser?.id ? getDisplayName(currentUser) : 'User',
     created_at: m.created_at,
   }));
   renderWorkspaceMembers();
@@ -853,6 +870,7 @@ async function leaveWorkspace(wsId) {
   showToast('You left the workspace.');
   if (activeWorkspace && activeWorkspace.id === wsId) {
     activeWorkspace = null;
+    localStorage.removeItem(WS_STORAGE_KEY);
     sharedChecklists = [];
     await loadChecklists();
     renderSidebar();

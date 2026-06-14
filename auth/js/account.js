@@ -320,11 +320,21 @@ async function enterApp() {
   await loadWorkspaces();
 
   const savedId = localStorage.getItem(WS_STORAGE_KEY);
-  if (savedId && workspaces.find(w => w.id === savedId)) {
-    if (DEV) console.log('[account] restoring workspace:', savedId);
-    await switchWorkspace(savedId);
+  if (savedId) {
+    const ws = workspaces.find(w => w.id === savedId);
+    if (ws) {
+      if (DEV) console.log('[account] restoring workspace:', savedId);
+      await switchWorkspace(savedId);
+    } else if (workspaces.length > 0) {
+      // Workspace list was loaded but saved workspace not found — it was deleted
+      localStorage.removeItem(WS_STORAGE_KEY);
+      await loadChecklists();
+    } else {
+      // Workspace list is empty (transient failure) — preserve the key
+      if (DEV) console.log('[account] workspaces empty, preserving key for', savedId);
+      await loadChecklists();
+    }
   } else {
-    if (savedId) localStorage.removeItem(WS_STORAGE_KEY);
     await loadChecklists();
   }
 

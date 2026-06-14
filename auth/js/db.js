@@ -18,12 +18,25 @@ async function loadChecklists() {
 
   // Exclude checklists that are linked to any workspace — they belong to the workspace view only
   const wsChecklistIds = new Set();
-  try {
-    const { data: wsLinks } = await sb
-      .from('workspace_checklists')
-      .select('checklist_id');
-    if (wsLinks) wsLinks.forEach(l => wsChecklistIds.add(l.checklist_id));
-  } catch (_) {}
+  const { data: wsLinks, error: wsErr } = await sb
+    .from('workspace_checklists')
+    .select('checklist_id');
+  if (wsErr && wsErr.code !== '42501') {
+    console.error('[db] loadChecklists workspace_checklists error:', wsErr);
+  }
+  if (wsLinks) wsLinks.forEach(l => wsChecklistIds.add(l.checklist_id));
+  // If the direct query was denied (42501), try the localStorage cache from shareChecklist
+  if (wsErr && wsErr.code === '42501') {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('quickcheck_ws_checklists_')) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(cached)) cached.forEach(l => wsChecklistIds.add(l.checklist_id));
+        } catch (_) {}
+      }
+    }
+  }
 
   checklists = (data || [])
     .filter(r => !wsChecklistIds.has(r.id))
