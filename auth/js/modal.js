@@ -54,6 +54,37 @@ function chooseBlankChecklist() {
   createBlankChecklist();
 }
 
+function chooseGenerateChecklist() {
+  closeModal('new-checklist-modal');
+  document.getElementById('ai-context-input').value = '';
+  document.getElementById('ai-generate-modal').classList.add('open');
+}
+
+function openChecklistInChatGPT() {
+  const context = document.getElementById('ai-context-input').value.trim();
+  const prompt = `You are a Checklist Generator. Generate a detailed checklist in Markdown format for the following context. Do NOT ask for more information — use the context provided.
+
+Requirements:
+
+* Use markdown headings (## for sections)
+* Use checkbox items (- [ ])
+* Organize into logical sections
+* Include validation steps
+* Include edge cases
+* Include testing steps
+* Output valid markdown only
+
+Context:
+
+${context || 'Create a general project readiness checklist.'}`;
+
+  navigator.clipboard.writeText(prompt).catch(() => {});
+  window.open('https://chat.openai.com', '_blank');
+  closeModal('ai-generate-modal');
+  document.getElementById('ai-guidance-modal').classList.add('open');
+  showToast('Prompt copied. Paste it into ChatGPT and press Enter.', 'success');
+}
+
 // ─── Upload / import modal ────────────────────────────────────────────────
 
 function showUploadModal() {

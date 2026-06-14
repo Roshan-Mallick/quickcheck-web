@@ -355,15 +355,18 @@ function toggleWorkspaceDropdown() {
   const dd = document.getElementById('ws-dropdown');
   if (!dd) return;
   dd.classList.toggle('open');
-  document.addEventListener('click', closeWsDropdown, { once: true });
 }
 
 function closeWsDropdown(e) {
   const dd = document.getElementById('ws-dropdown');
-  if (!dd) return;
-  if (e && e.target.closest('.workspace-switcher-current, .ws-dropdown-item')) return;
+  if (!dd || !dd.classList.contains('open')) return;
+  if (e && e.target.closest('.workspace-switcher-current')) return;
   dd.classList.remove('open');
+  if (!activeWorkspace) switchToPersonal();
 }
+
+document.addEventListener('click', closeWsDropdown);
+document.addEventListener('touchstart', closeWsDropdown, { passive: true });
 
 // ─── UI — Workspace Members ──────────────────────────────────────────────
 

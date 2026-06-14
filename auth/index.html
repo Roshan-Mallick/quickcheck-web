@@ -331,7 +331,7 @@
     <div class="modal">
       <div class="modal-label">New checklist</div>
       <div class="modal-title">How would you like to start?</div>
-      <div class="modal-sub">Upload an existing Markdown file or create a blank checklist from scratch.</div>
+      <div class="modal-sub">Upload an existing Markdown file, start from scratch, or generate one with AI.</div>
       <div class="new-checklist-options">
         <button type="button" class="new-option-card" onclick="chooseUploadChecklist()">
           <div class="new-option-icon">
@@ -352,9 +352,60 @@
           <div class="new-option-title">Blank checklist</div>
           <div class="new-option-desc">Start fresh with an empty checklist you can edit inline.</div>
         </button>
+        <button type="button" class="new-option-card" onclick="chooseGenerateChecklist()" aria-label="Generate checklist with ChatGPT">
+          <div class="new-option-icon primary">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <div class="new-option-title">Generate with ChatGPT</div>
+          <div class="new-option-desc">Use ChatGPT to generate a structured checklist from your requirements.</div>
+        </button>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal('new-checklist-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── AI GENERATION MODAL ─────────────────────────────────────── -->
+  <div class="modal-overlay" id="ai-generate-modal">
+    <div class="modal">
+      <div class="modal-label">Generate Checklist with AI</div>
+      <div class="modal-title">Generate with ChatGPT</div>
+      <div class="modal-sub">QuickCheck will embed your context into a self-contained prompt, copy it to your clipboard, and open ChatGPT. Just paste and press Enter.</div>
+      <label class="ai-input-label" for="ai-context-input">Context / Requirements</label>
+      <textarea class="ai-context-input" id="ai-context-input" rows="4" placeholder="Example:&#10;Create a security review checklist for a SaaS application using Supabase authentication and Stripe billing."></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('ai-generate-modal')">Cancel</button>
+        <button class="btn-primary ai-open-btn" id="ai-open-btn" onclick="openChecklistInChatGPT()">Open ChatGPT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── AI GUIDANCE MODAL ────────────────────────────────────────── -->
+  <div class="modal-overlay" id="ai-guidance-modal">
+    <div class="modal">
+      <div class="modal-label">ChatGPT opened</div>
+      <div class="modal-title">Prompt copied to clipboard <span style="font-size:20px">&#10003;</span></div>
+      <div class="modal-sub">The prompt already includes your context — no back-and-forth needed.</div>
+      <div class="guidance-steps">
+        <div class="guidance-step">
+          <div class="guidance-step-num">1</div>
+          <div class="guidance-step-text">Go to the ChatGPT tab that just opened.</div>
+        </div>
+        <div class="guidance-step">
+          <div class="guidance-step-num">2</div>
+          <div class="guidance-step-text">Click the message box and press <kbd>Ctrl+V</kbd> (or <kbd>Cmd+V</kbd>) to paste the prompt.</div>
+        </div>
+        <div class="guidance-step">
+          <div class="guidance-step-num">3</div>
+          <div class="guidance-step-text">Press <kbd>Enter</kbd> to generate your checklist.</div>
+        </div>
+      </div>
+      <div class="guidance-note">Copy the generated Markdown, save as a <code>.md</code> file, and upload using <strong>Upload .md Template</strong>.</div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="closeModal('ai-guidance-modal')">Got it</button>
       </div>
     </div>
   </div>
