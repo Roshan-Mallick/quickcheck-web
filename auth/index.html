@@ -750,6 +750,55 @@
     </div>
   </div>
 
+  <!-- ─── WORKSPACE MANAGEMENT MODAL ─────────────────────────────── -->
+  <div class="modal-overlay" id="workspace-management-modal" onclick="if(closeWorkspaceSettingsMenu)closeWorkspaceSettingsMenu()">
+    <div class="modal">
+      <div class="modal-label">Management</div>
+      <div class="modal-title">Workspace Management</div>
+      <div class="ws-management-sub">Select a workspace to manage its settings.</div>
+      <div id="ws-management-list"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('workspace-management-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── WORKSPACE RENAME MODAL ──────────────────────────────────── -->
+  <div class="modal-overlay" id="workspace-rename-modal">
+    <div class="modal">
+      <div class="modal-label">Rename</div>
+      <div class="modal-title">Rename workspace</div>
+      <form class="account-form" onsubmit="event.preventDefault(); submitRenameWorkspace()">
+        <div class="account-field">
+          <label for="ws-rename-input">Workspace name</label>
+          <input type="text" id="ws-rename-input" placeholder="Workspace name" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button type="submit" class="btn-primary" id="ws-rename-btn">Save</button>
+          <button type="button" class="btn-cancel" onclick="closeModal('workspace-rename-modal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── WORKSPACE DESCRIPTION MODAL ─────────────────────────────── -->
+  <div class="modal-overlay" id="workspace-description-modal">
+    <div class="modal">
+      <div class="modal-label">Description</div>
+      <div class="modal-title">Workspace description</div>
+      <form class="account-form" onsubmit="event.preventDefault(); submitWorkspaceDescription()">
+        <div class="account-field">
+          <label for="ws-description-input">Description</label>
+          <textarea id="ws-description-input" class="account-textarea" placeholder="What is this workspace for?" rows="3" autocomplete="off" spellcheck="false"></textarea>
+        </div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button type="submit" class="btn-primary" id="ws-desc-btn">Save</button>
+          <button type="button" class="btn-cancel" onclick="closeModal('workspace-description-modal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ─── TOASTS ───────────────────────────────────────────────────── -->
   <div class="toast-container" id="toast-container"></div>
 

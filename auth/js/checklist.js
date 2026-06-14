@@ -1,23 +1,26 @@
 // ─── Create / Import ──────────────────────────────────────────────────────
 
-function createBlankChecklist() {
+async function createBlankChecklist() {
   const cl = {
     id:    uid(),
     title: 'Untitled checklist',
     data:  [{ id: uid(), title: 'Section 1', items: [{ id: uid(), label: 'First item', checked: false }] }],
   };
+  if (DEV) console.log('[checklist] createBlankChecklist ws mode:', !!activeWorkspace, 'id:', cl.id);
   if (activeWorkspace) {
     sharedChecklists.unshift(cl);
-    persistChecklist(cl).then(() => {
-      shareChecklist(activeWorkspace.id, cl.id);
-    });
   } else {
     checklists.unshift(cl);
-    persistChecklist(cl);
   }
   renderSidebar();
   loadChecklist(cl.id);
   setTimeout(() => startEditTitle(), 50);
+  if (activeWorkspace) {
+    await persistChecklist(cl);
+    await shareChecklist(activeWorkspace.id, cl.id);
+  } else {
+    await persistChecklist(cl);
+  }
 }
 
 function importChecklist() {
@@ -40,6 +43,8 @@ function renderSidebar() {
   el.innerHTML = '';
 
   const source = activeWorkspace ? sharedChecklists : checklists;
+
+  if (DEV) console.log('[checklist] renderSidebar mode:', activeWorkspace ? 'workspace' : 'personal', 'source length:', source.length);
 
   if (activeWorkspace) {
     const label = document.getElementById('sidebar-section-label');
@@ -88,7 +93,8 @@ function loadChecklist(id) {
   activeId = id;
   const source = activeWorkspace ? sharedChecklists : checklists;
   const cl = source.find(c => c.id === id) || checklists.find(c => c.id === id);
-  if (!cl) { showEmptyState(); return; }
+  if (!cl) { if (DEV) console.log('[checklist] loadChecklist not found:', id); showEmptyState(); return; }
+  if (DEV) console.log('[checklist] loadChecklist:', id, cl.title);
   renderChecklist(cl);
   renderSidebar();
   closeSidebar();
@@ -197,8 +203,9 @@ function createItemRow(cl, si, ii) {
 // ─── Checklist interactions ───────────────────────────────────────────────
 
 function getActive() {
-  return checklists.find(c => c.id === activeId)
-      || sharedChecklists.find(c => c.id === activeId);
+  const source = activeWorkspace ? sharedChecklists : checklists;
+  return source.find(c => c.id === activeId)
+      || checklists.find(c => c.id === activeId);
 }
 
 function toggleItem(si, ii, checked) {

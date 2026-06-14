@@ -317,7 +317,16 @@ async function enterApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display  = 'block';
   updateUserDisplay();
-  await loadChecklists();
   await loadWorkspaces();
+
+  const savedId = localStorage.getItem(WS_STORAGE_KEY);
+  if (savedId && workspaces.find(w => w.id === savedId)) {
+    if (DEV) console.log('[account] restoring workspace:', savedId);
+    await switchWorkspace(savedId);
+  } else {
+    if (savedId) localStorage.removeItem(WS_STORAGE_KEY);
+    await loadChecklists();
+  }
+
   renderWorkspaceSwitcher();
 }
