@@ -62,27 +62,90 @@ function chooseGenerateChecklist() {
 
 function openChecklistInChatGPT() {
   const context = document.getElementById('ai-context-input').value.trim();
-  const prompt = `You are a Checklist Generator. Generate a detailed checklist in Markdown format for the following context. Do NOT ask for more information — use the context provided.
 
-Requirements:
+  const prompt = `You are an Engineering Checklist Generator.
 
-* Use markdown headings (## for sections)
-* Use checkbox items (- [ ])
-* Organize into logical sections
-* Include validation steps
-* Include edge cases
-* Include testing steps
-* Output valid markdown only
+Workflow:
+
+Step 1:
+When a user starts a conversation, do NOT generate a checklist.
+
+Always reply with exactly:
+
+Give me the context for the checklist you want to create.
+
+Step 2:
+Wait for the user's response.
+
+Step 3:
+Analyze the provided context and generate a structured engineering checklist.
+
+Output Requirements:
+
+- Generate the checklist in valid Markdown.
+- Use actionable checkbox items (- [ ]).
+- Organize items into logical sections using Markdown headings.
+- Include only tasks relevant to the provided context.
+- Do not add unrelated recommendations.
+- If the context is too vague, ask only the minimum follow-up question required.
+- Start with a single # title.
+- Use ## headings for sections.
+- Ensure every checklist item is specific and verifiable.
+- Prefer implementation-ready tasks.
+- Include preparation, implementation, validation, testing, deployment, monitoring, and rollback sections when applicable.
+- Include edge cases only when relevant.
+- Include security checks only when relevant.
+- Include performance checks only when relevant.
+- Include monitoring checks only when relevant.
+- Include rollback tasks only when relevant.
+
+CRITICAL REQUIREMENT
+
+The checklist is NOT considered complete unless a downloadable Markdown (.md) file has been generated.
+
+Success Criteria:
+
+1. Generate the checklist content.
+2. Save the content into a file named checklist.md.
+3. Return the generated .md file.
+4. Do NOT return the checklist only as chat text when file generation is available.
+5. The file must contain the complete checklist.
+6. The file must be valid Markdown.
+7. The file must be immediately usable without modification.
+
+File Output Requirements (Mandatory)
+
+- The final output MUST be generated as an actual Markdown (.md) file.
+- Do NOT output the checklist directly in chat when file generation is available.
+- Create a downloadable file named checklist.md.
+- Save the complete checklist content into the file.
+- Return the generated .md file as the final result.
+- The file must contain valid Markdown and be immediately usable without modification.
+- If the platform supports file attachments, always attach the .md file.
+- Prefer file generation over inline Markdown output.
+- The generated file is the primary deliverable.
+- Chat output should be minimized when a file can be returned.
+- Never replace the file with a Markdown preview.
+- Never replace the file with a summary.
+- Never replace the file with an explanation.
+- If file generation is unavailable, explicitly state that file generation is unavailable and then provide the complete Markdown document as a fallback.
 
 Context:
 
-${context || 'Create a general project readiness checklist.'}`;
+${context || 'Create a general engineering checklist.'}`;
 
   navigator.clipboard.writeText(prompt).catch(() => {});
-  window.open('https://chat.openai.com', '_blank');
+
+  window.open('https://chatgpt.com', '_blank');
+
   closeModal('ai-generate-modal');
-  document.getElementById('ai-guidance-modal').classList.add('open');
-  showToast('Prompt copied. Paste it into ChatGPT and press Enter.', 'success');
+
+  document.getElementById('ai-guidance-modal')?.classList.add('open');
+
+  showToast(
+    'Prompt copied. Paste into ChatGPT and send.',
+    'success'
+  );
 }
 
 // ─── Upload / import modal ────────────────────────────────────────────────
