@@ -275,7 +275,8 @@
             <div class="sidebar-search-dropdown" id="sidebar-search-dropdown"></div>
           </div>
         </div>
-        <div class="sidebar-section-label">My checklists</div>
+        <div id="workspace-switcher"></div>
+        <div class="sidebar-section-label" id="sidebar-section-label">My checklists</div>
         <div class="sidebar-lists" id="sidebar-lists"></div>
         <div class="sidebar-footer">
           <button type="button" class="account-trigger" onclick="showAccountModal()" title="Account settings">
@@ -559,6 +560,145 @@
   </div>
 </div>
 
+  <!-- ─── CREATE WORKSPACE MODAL ───────────────────────────────────── -->
+  <div class="modal-overlay" id="create-workspace-modal">
+    <div class="modal">
+      <div class="modal-label">Workspace</div>
+      <div class="modal-title">Create workspace</div>
+      <div class="modal-sub">Workspaces let you share and collaborate on checklists with your team.</div>
+      <form class="account-form" onsubmit="event.preventDefault(); createWorkspace(document.getElementById('create-ws-name').value)">
+        <div class="account-field">
+          <label for="create-ws-name">Workspace name</label>
+          <input type="text" id="create-ws-name" placeholder="e.g. Engineering Team" autocomplete="off" spellcheck="false" />
+        </div>
+        <button type="submit" class="btn-primary" id="create-ws-btn">Create workspace</button>
+      </form>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('create-workspace-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── INVITE MEMBER MODAL ───────────────────────────────── │ -->
+  <div class="modal-overlay" id="invite-member-modal">
+    <div class="modal">
+      <div class="modal-label">Invite</div>
+      <div class="modal-title">Invite to workspace</div>
+      <div class="modal-sub">Send an invitation to collaborate on this workspace's checklists.</div>
+      <form class="account-form" onsubmit="event.preventDefault(); inviteToWorkspace(activeWorkspace?.id, document.getElementById('invite-member-email').value, document.getElementById('invite-member-role').value)">
+        <div class="account-field">
+          <label for="invite-member-email">Email address</label>
+          <input type="email" id="invite-member-email" placeholder="colleague@company.com" autocomplete="email" spellcheck="false" />
+        </div>
+        <div class="account-field">
+          <label for="invite-member-role">Role</label>
+          <select id="invite-member-role">
+            <option value="editor">Editor — can view, edit, and share checklists</option>
+            <option value="viewer">Viewer — can only view checklists</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" id="invite-ws-btn" style="width:auto;align-self:flex-start">Send invite</button>
+      </form>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('invite-member-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SHARE CHECKLIST MODAL ────────────────────────────────── -->
+  <div class="modal-overlay" id="share-checklist-modal">
+    <div class="modal">
+      <div class="modal-label">Share</div>
+      <div class="modal-title">Share checklist</div>
+      <div class="modal-sub">Choose a workspace to share this checklist with.</div>
+      <div id="share-ws-list" class="share-ws-list"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal('share-checklist-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── WORKSPACE SETTINGS MODAL ─────────────────────────────── -->
+  <div class="modal-overlay" id="workspace-settings-modal">
+    <div class="modal modal-wide">
+      <div class="account-modal-sidebar">
+        <div class="ws-settings-nav-header">Workspace settings</div>
+        <button class="account-nav-item active" onclick="showWsSettingsTab('general')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          General
+        </button>
+        <button class="account-nav-item" onclick="showWsSettingsTab('members')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Members
+        </button>
+        <button class="account-nav-item" onclick="showWsSettingsTab('activity')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Activity
+        </button>
+        <button class="account-nav-item" onclick="showWsSettingsTab('billing')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Billing
+        </button>
+        <button class="account-nav-signout danger-nav" onclick="showWsSettingsTab('danger')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Delete workspace
+        </button>
+      </div>
+      <div class="account-modal-body">
+        <div class="account-modal-header">
+          <div>
+            <div class="modal-label">Workspace</div>
+            <div class="modal-title">Settings</div>
+          </div>
+        </div>
+        <div id="ws-settings-msg" class="account-msg"></div>
+
+        <!-- General -->
+        <div class="ws-settings-section" id="ws-sec-general">
+          <div class="account-section-title">General</div>
+          <form class="account-form" onsubmit="event.preventDefault(); renameWorkspace(activeWorkspace?.id, document.getElementById('ws-settings-name').value)">
+            <div class="account-field">
+              <label for="ws-settings-name">Workspace name</label>
+              <input type="text" id="ws-settings-name" placeholder="Workspace name" autocomplete="off" spellcheck="false" />
+            </div>
+            <button type="submit" class="btn-primary account-save-btn">Save</button>
+          </form>
+        </div>
+
+        <!-- Members -->
+        <div class="ws-settings-section" id="ws-sec-members">
+          <div class="account-section-title">Members</div>
+          <button class="btn-primary" onclick="showInviteMemberModal()" style="margin-bottom:16px;width:auto">Invite member</button>
+          <div id="workspace-members-list"></div>
+        </div>
+
+        <!-- Activity -->
+        <div class="ws-settings-section" id="ws-sec-activity">
+          <div class="account-section-title">Activity log</div>
+          <div id="workspace-activity-list"></div>
+        </div>
+
+        <!-- Billing -->
+        <div class="ws-settings-section" id="ws-sec-billing">
+          <div class="account-section-title">Billing & plan</div>
+          <div id="ws-billing-info"></div>
+        </div>
+
+        <!-- Danger -->
+        <div class="ws-settings-section" id="ws-sec-danger">
+          <div class="account-section-title" style="color:var(--danger);">Delete workspace</div>
+          <p class="account-hint">Permanently delete this workspace and remove all shared checklists. This cannot be undone.</p>
+          <br>
+          <button type="button" class="btn-danger-outline" onclick="showConfirmModal({label:'Delete workspace',title:'Delete this workspace?',message:'All shared checklists will be removed from this workspace. Checklists owned by you will remain in your personal account.',onConfirm:()=>deleteWorkspace(activeWorkspace?.id)})">Delete workspace</button>
+        </div>
+
+        <div class="modal-actions account-modal-footer">
+          <button class="btn-cancel" onclick="closeModal('workspace-settings-modal')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── TOASTS ───────────────────────────────────────────────────── -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -606,6 +746,7 @@
   <script src="js/parser.js"></script>
   <script src="js/checklist.js"></script>
   <script src="js/modal.js"></script>
+  <script src="js/workspace.js"></script>
   <script src="js/state.js"></script>
 
 </body>

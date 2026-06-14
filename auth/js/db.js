@@ -37,7 +37,7 @@ async function persistChecklist(cl) {
     const { error } = await sb.from('checklists').upsert(
       {
         id:         cl.id,
-        user_id:    currentUser.id,
+        user_id:    cl._owner_id || currentUser.id,
         title:      cl.title,
         data:       cl.data,
         updated_at: new Date().toISOString(),
@@ -63,6 +63,7 @@ async function deleteChecklist(id) {
     const { error } = await sb.from('checklists').delete().eq('id', id);
     if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
     checklists = checklists.filter(c => c.id !== id);
+    sharedChecklists = sharedChecklists.filter(c => c.id !== id);
     if (activeId === id) { activeId = null; showEmptyState(); }
     renderSidebar();
     showToast('Checklist deleted.');
