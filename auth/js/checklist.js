@@ -6,8 +6,15 @@ function createBlankChecklist() {
     title: 'Untitled checklist',
     data:  [{ id: uid(), title: 'Section 1', items: [{ id: uid(), label: 'First item', checked: false }] }],
   };
-  checklists.unshift(cl);
-  persistChecklist(cl);
+  if (activeWorkspace) {
+    sharedChecklists.unshift(cl);
+    persistChecklist(cl).then(() => {
+      shareChecklist(activeWorkspace.id, cl.id);
+    });
+  } else {
+    checklists.unshift(cl);
+    persistChecklist(cl);
+  }
   renderSidebar();
   loadChecklist(cl.id);
   setTimeout(() => startEditTitle(), 50);
@@ -27,24 +34,40 @@ function importChecklist() {
 // ─── Sidebar ──────────────────────────────────────────────────────────────
 
 function renderSidebar() {
+  renderWorkspaceSwitcher();
+
   const el = document.getElementById('sidebar-lists');
   el.innerHTML = '';
 
-  if (!checklists.length) {
+  const source = activeWorkspace ? sharedChecklists : checklists;
+
+  if (activeWorkspace) {
+    const label = document.getElementById('sidebar-section-label');
+    if (label) label.textContent = 'Shared with workspace';
+  } else {
+    const label = document.getElementById('sidebar-section-label');
+    if (label) label.textContent = 'My checklists';
+  }
+
+  if (!source.length) {
     el.innerHTML = '<p style="padding:12px 16px;font-size:12px;color:var(--text3);">No checklists yet.</p>';
     return;
   }
 
-  for (const cl of checklists) {
+  for (const cl of source) {
     const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
     const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
 
     const item = document.createElement('div');
     item.className = 'list-item' + (cl.id === activeId ? ' active' : '');
+    const shareBtn = activeWorkspace
+      ? `<button class="list-item-share-btn" onclick="event.stopPropagation(); unshareChecklist('${activeWorkspace.id}', '${cl.id}')" title="Remove from workspace"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
+      : `<button class="list-item-share-btn" onclick="event.stopPropagation(); showShareModal('${cl.id}')" title="Share to workspace"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button>`;
     item.innerHTML = `
-      <span class="list-item-icon">☑</span>
+      <span class="list-item-icon">${activeWorkspace ? '🏢' : '☑'}</span>
       <span class="list-item-name">${esc(cl.title)}</span>
       <span class="list-item-count">${checked}/${total}</span>
+      ${shareBtn}
     `;
     item.onclick = () => loadChecklist(cl.id);
     el.appendChild(item);
@@ -63,7 +86,8 @@ function renderSidebar() {
 
 function loadChecklist(id) {
   activeId = id;
-  const cl = checklists.find(c => c.id === id);
+  const source = activeWorkspace ? sharedChecklists : checklists;
+  const cl = source.find(c => c.id === id) || checklists.find(c => c.id === id);
   if (!cl) { showEmptyState(); return; }
   renderChecklist(cl);
   renderSidebar();
@@ -172,7 +196,10 @@ function createItemRow(cl, si, ii) {
 
 // ─── Checklist interactions ───────────────────────────────────────────────
 
-function getActive() { return checklists.find(c => c.id === activeId); }
+function getActive() {
+  return checklists.find(c => c.id === activeId)
+      || sharedChecklists.find(c => c.id === activeId);
+}
 
 function toggleItem(si, ii, checked) {
   const cl = getActive(); if (!cl) return;

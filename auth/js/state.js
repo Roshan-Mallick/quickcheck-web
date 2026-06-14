@@ -11,6 +11,14 @@ let activeId    = null;   // ID of the currently displayed checklist
 let authView    = 'login';
 let saving      = false;  // Guard against concurrent upsert calls
 
+// Workspace state (populated by workspace.js)
+let workspaces        = [];
+let activeWorkspace   = null;
+let sharedChecklists  = [];
+let workspaceMembers  = [];
+let workspaceActivity = [];
+let workspaceRealtime = null;
+
 // ─── Supabase Init ────────────────────────────────────────────────────────
 
 function initSupabase() {

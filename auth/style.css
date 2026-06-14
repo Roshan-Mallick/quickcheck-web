@@ -1539,3 +1539,182 @@ body {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   WORKSPACE UI
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Workspace Switcher ─────────────────────────────────────── */
+#workspace-switcher {
+  padding: 4px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.ws-switcher-label {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.07em; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.workspace-switcher-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ws-settings-btn {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  padding: 4px; border-radius: 4px; display: flex; align-items: center;
+  margin-bottom: 6px;
+}
+.ws-settings-btn:hover { color: var(--accent); background: var(--surface3); }
+.workspace-switcher-current {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius);
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  background: var(--surface2); border: 1px solid var(--border2);
+  transition: border-color 0.15s;
+}
+.workspace-switcher-current:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+.ws-current-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-chevron { flex-shrink: 0; color: var(--text3); transition: transform 0.2s; }
+.workspace-switcher-dropdown.open .ws-chevron { transform: rotate(180deg); }
+
+.workspace-switcher-dropdown {
+  display: none;
+  position: absolute; left: 16px; right: 16px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  z-index: 55; max-height: 240px; overflow-y: auto;
+  margin-top: 4px;
+}
+.workspace-switcher-dropdown.open { display: block; }
+
+.ws-dropdown-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; cursor: pointer; font-size: 13px; color: var(--text2);
+  transition: background 0.12s; border-left: 2px solid transparent;
+}
+.ws-dropdown-item:hover { background: var(--surface2); color: var(--text); }
+.ws-dropdown-item.active { background: var(--accent-dim); color: var(--accent); border-left-color: var(--accent); }
+.ws-dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.ws-create-item { color: var(--accent); }
+.ws-create-item:hover { color: var(--accent-hover); }
+.ws-member-count {
+  margin-left: auto; font-size: 10px; color: var(--text3);
+  background: var(--surface3); padding: 1px 6px; border-radius: 4px;
+}
+
+/* ── Sidebar share button ───────────────────────────────────── */
+.list-item-share-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); padding: 4px; flex-shrink: 0;
+  opacity: 0; transition: opacity 0.15s, color 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+}
+.list-item-share-btn:hover { color: var(--accent); background: var(--surface3); }
+.list-item:hover .list-item-share-btn { opacity: 1; }
+
+/* ── Select element styling ────────────────────────────────── */
+.account-field select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 11px 14px; color: var(--text);
+  font-size: 14px; outline: none; font-family: var(--sans);
+  transition: border-color 0.2s; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2390909b' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 36px;
+}
+.account-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.account-field select:focus-visible { outline: none; }
+
+/* ── Share Modal ────────────────────────────────────────────── */
+.share-ws-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.share-ws-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius);
+  background: var(--surface2); border: 1px solid var(--border);
+  cursor: pointer; font-family: var(--sans); font-size: 14px; color: var(--text);
+  text-align: left; transition: border-color 0.15s, background 0.15s;
+}
+.share-ws-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+/* ── Members ────────────────────────────────────────────────── */
+#workspace-members-list { display: flex; flex-direction: column; gap: 6px; }
+.ws-member-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius);
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.ws-member-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid rgba(201,168,108,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: var(--accent); flex-shrink: 0;
+}
+.ws-member-info { flex: 1; min-width: 0; }
+.ws-member-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.ws-member-you { color: var(--accent); font-size: 11px; }
+.ws-member-email { display: block; font-size: 11px; color: var(--text3); }
+.ws-member-role {
+  font-size: 12px; padding: 4px 8px; border-radius: 6px;
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text2); font-family: var(--sans); cursor: pointer;
+}
+.ws-member-role:disabled { opacity: 0.6; cursor: not-allowed; }
+.ws-member-remove {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  padding: 4px; border-radius: 4px; display: flex; align-items: center;
+}
+.ws-member-remove:hover { color: var(--danger); background: rgba(224,122,122,0.08); }
+.ws-pending-actions { display: flex; gap: 6px; }
+.btn-xs { padding: 5px 10px !important; font-size: 11px !important; }
+.ws-empty { font-size: 13px; color: var(--text3); padding: 12px 0; }
+
+/* ── Activity ───────────────────────────────────────────────── */
+#workspace-activity-list { display: flex; flex-direction: column; gap: 4px; }
+.ws-activity-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: var(--radius);
+  font-size: 12px; color: var(--text2);
+  background: var(--surface2);
+}
+.ws-activity-user { font-weight: 600; color: var(--text); flex-shrink: 0; }
+.ws-activity-action { flex: 1; min-width: 0; }
+.ws-activity-time { flex-shrink: 0; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+/* ── Billing ────────────────────────────────────────────────── */
+#ws-billing-info { display: flex; flex-direction: column; gap: 8px; }
+.ws-billing-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; border-radius: var(--radius);
+  background: var(--surface2); font-size: 13px; color: var(--text2);
+}
+.ws-billing-value { font-weight: 600; color: var(--text); }
+.ws-billing-note { font-size: 12px; color: var(--text3); margin-top: 8px; }
+
+/* ── Presense indicator ─────────────────────────────────────── */
+#workspace-presence { display: flex; gap: 4px; padding: 4px 0; }
+.presence-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); display: inline-block;
+}
+
+/* ── Workspace Settings nav header ──────────────────────────── */
+.ws-settings-nav-header {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0 12px 12px; margin-bottom: 4px;
+}
+
+/* ── Workspace settings sections ────────────────────────────── */
+.ws-settings-section { padding: 22px 0; border-top: 1px solid var(--border); }
+.ws-settings-section:first-of-type { border-top: none; padding-top: 0; }
+
+/* ── Responsive workspace switcher on mobile ────────────────── */
+@media (max-width: 900px) {
+  #workspace-switcher { display: block; }
+  .workspace-switcher-dropdown {
+    position: absolute; left: 16px; right: 16px; top: auto;
+  }
+}
+

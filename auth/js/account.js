@@ -318,4 +318,6 @@ async function enterApp() {
   document.getElementById('app-screen').style.display  = 'block';
   updateUserDisplay();
   await loadChecklists();
+  await loadWorkspaces();
+  renderWorkspaceSwitcher();
 }
