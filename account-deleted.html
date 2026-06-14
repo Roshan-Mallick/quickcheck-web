@@ -12,7 +12,35 @@
     object-src 'none';
     base-uri 'self';
   ">
-  <title>Account Deleted • Quickcheck</title>
+  <title>Account Deleted — Quickcheck</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta name="description" content="Your Quickcheck account has been permanently deleted. All checklist data has been removed.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://quickcheck-web.vercel.app/account-deleted">
+  <meta property="og:title" content="Account Deleted — Quickcheck">
+  <meta property="og:description" content="Your Quickcheck account has been permanently deleted. All checklist data has been removed.">
+  <meta property="og:image" content="https://quickcheck-web.vercel.app/assets/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Account Deleted — Quickcheck">
+  <meta name="twitter:description" content="Your Quickcheck account has been permanently deleted. All checklist data has been removed.">
+  <meta name="twitter:image" content="https://quickcheck-web.vercel.app/assets/og-image.png">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://quickcheck-web.vercel.app/account-deleted">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Account Deleted — Quickcheck",
+    "description": "Your Quickcheck account has been permanently deleted. All checklist data has been removed."
+  }
+  </script>
 
   <style>
     * {
@@ -85,7 +113,7 @@
       Your account and all associated data have been permanently removed.
     </p>
 
-    <a class="btn" href="/auth/index.html">
+    <a class="btn" href="/auth">
       Create New Account
     </a>
   </div>
@@ -104,7 +132,7 @@
     sessionStorage.clear()
 
     setTimeout(() => {
-      window.location.replace('/auth/index.html')
+      window.location.replace('/auth')
     }, 3000)
   </script>
 

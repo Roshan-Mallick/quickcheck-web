@@ -1,0 +1,18 @@
+{
+  "redirects": [
+    { "source": "/pages/docs.html", "destination": "/docs", "permanent": true },
+    { "source": "/pages/changelog.html", "destination": "/changelog", "permanent": true },
+    { "source": "/legal/privacy.html", "destination": "/privacy", "permanent": true },
+    { "source": "/legal/terms.html", "destination": "/terms", "permanent": true },
+    { "source": "/legal/security.html", "destination": "/security", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/docs", "destination": "/pages/docs.html" },
+    { "source": "/changelog", "destination": "/pages/changelog.html" },
+    { "source": "/ai-checklist-generator", "destination": "/pages/ai-checklist-generator.html" },
+    { "source": "/privacy", "destination": "/legal/privacy.html" },
+    { "source": "/terms", "destination": "/legal/terms.html" },
+    { "source": "/security", "destination": "/legal/security.html" },
+    { "source": "/account-deleted", "destination": "/account-deleted.html" }
+  ]
+}

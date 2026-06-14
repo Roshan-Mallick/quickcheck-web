@@ -15,8 +15,36 @@
     base-uri 'self';
     form-action 'self';
   ">
-  <title>Quickcheck</title>
+  <title>Sign In — Quickcheck</title>
   <link rel="icon" type="image/png" href="../assets/logo.png">
+  <meta name="description" content="Sign in to Quickcheck to access your persistent checklists. Create an account or sign in with Google or GitHub.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://quickcheck-web.vercel.app/auth/">
+  <meta property="og:title" content="Sign In — Quickcheck">
+  <meta property="og:description" content="Sign in to Quickcheck to access your persistent checklists. Create an account or sign in with Google or GitHub.">
+  <meta property="og:image" content="https://quickcheck-web.vercel.app/assets/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Sign In — Quickcheck">
+  <meta name="twitter:description" content="Sign in to Quickcheck to access your persistent checklists. Create an account or sign in with Google or GitHub.">
+  <meta name="twitter:image" content="https://quickcheck-web.vercel.app/assets/og-image.png">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://quickcheck-web.vercel.app/auth/">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Sign In — Quickcheck",
+    "description": "Sign in to Quickcheck to access your persistent checklists. Create an account or sign in with Google or GitHub."
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -30,8 +58,8 @@
   <!-- ─── AUTH SCREEN ──────────────────────────────────────────────── -->
   <div id="auth-screen">
     <header class="auth-header">
-      <a href="../index.html" class="auth-brand" aria-label="Go to Quickcheck home page">
-        <img src="../assets/logo.png" alt="" class="auth-brand-icon">
+      <a href="/" class="auth-brand" aria-label="Go to Quickcheck home page">
+        <img src="../assets/logo.png" alt="Quickcheck" class="auth-brand-icon" width="28" height="28">
         <span class="auth-brand-text">Quickcheck</span>
       </a>
       <div class="auth-header-tabs">
@@ -81,7 +109,7 @@
           <div id="auth-view-login" class="auth-view">
             <div class="auth-form-header">
               <div class="auth-form-label">Sign in</div>
-              <h1 class="auth-form-title">Welcome back.</h1>
+              <h1 class="auth-form-title">Sign in to Quickcheck.</h1>
             </div>
             <button type="button" class="auth-oauth-btn" onclick="signInWithGoogle()">
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -128,7 +156,7 @@
           <div id="auth-view-register" class="auth-view" hidden>
             <div class="auth-form-header">
               <div class="auth-form-label">Create account</div>
-              <h1 class="auth-form-title">Get started free.</h1>
+              <h2 class="auth-form-title">Get started free.</h2>
             </div>
             <button type="button" class="auth-oauth-btn" onclick="signInWithGoogle()">
               <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -175,7 +203,7 @@
               <label class="auth-checkbox">
                 <input type="checkbox" id="register-agreed" onchange="updateRegisterBtn()" />
                 <span class="auth-checkbox-box"></span>
-                <span class="auth-checkbox-text">I agree to the <a href="../legal/terms.html" target="_blank" class="auth-link">Terms of Service</a> and <a href="../legal/privacy.html" target="_blank" class="auth-link">Privacy Policy</a></span>
+                <span class="auth-checkbox-text">I agree to the <a href="/terms" target="_blank" class="auth-link">Terms of Service</a> and <a href="/privacy" target="_blank" class="auth-link">Privacy Policy</a></span>
               </label>
               <button type="submit" class="auth-submit-btn" id="register-btn" disabled>Create account</button>
             </form>
@@ -190,7 +218,7 @@
             </button>
             <div class="auth-form-header">
               <div class="auth-form-label">Password reset</div>
-              <h1 class="auth-form-title">Reset your password.</h1>
+              <h2 class="auth-form-title">Reset your password.</h2>
             </div>
             <p class="auth-form-desc">Enter the email linked to your account. We'll send a reset link if it matches.</p>
             <form class="auth-form" onsubmit="handleForgotSubmit(event)">
@@ -212,7 +240,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             </div>
             <div class="auth-form-label">Check your inbox</div>
-            <h1 class="auth-form-title">Instructions sent.</h1>
+              <h2 class="auth-form-title">Instructions sent.</h2>
             <p class="auth-form-desc">You'll receive a link within a few minutes. Check spam if needed.</p>
             <button type="button" class="auth-outline-btn" onclick="switchAuthView('login')">Back to sign in</button>
           </div>
@@ -252,7 +280,7 @@
         <div class="sidebar-header">
           <div class="sidebar-header-top">
             <div class="app-brand">
-              <img src="../assets/logo.png" alt="Quickcheck Logo" style="width:28px; height:28px; object-fit:contain;" />
+              <img src="../assets/logo.png" alt="Quickcheck Logo" width="28" height="28" style="object-fit:contain;" />
               <span class="app-brand-text">Quickcheck</span>
             </div>
             <button type="button" class="sidebar-avatar-btn" onclick="showAccountModal()" title="Account settings">
