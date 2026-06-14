@@ -60,6 +60,9 @@ function updateRegisterBtn() {
 /**
  * Exchange the OAuth callback code for a session on redirect back from
  * Google / GitHub.
+ *
+ * If the exchange fails because the email already belongs to a different
+ * identity provider, show a clear message so the user knows what to do.
  */
 async function handleAuthCallback() {
   const params = new URLSearchParams(window.location.search);
@@ -74,7 +77,46 @@ async function handleAuthCallback() {
   window.history.replaceState({}, document.title, window.location.pathname);
 
   if (xcodeError) {
-    showAuthError('Authentication failed: ' + xcodeError.message);
+    const msg = (xcodeError.message || '').toLowerCase();
+
+    // Detect identity conflict: the email is already used by a different
+    // provider and identity linking could not be performed automatically.
+    if (msg.includes('identity') || msg.includes('already linked') || msg.includes('already exists') || msg.includes('conflict')) {
+      // Try to figure out which provider the user originally signed up from.
+      // We extract the email from the code-flow hint or redirect params.
+      const email = params.get('email') || '';
+
+      if (email) {
+        const providers = await getIdentityProviders(email);
+        const hasGoogle = providers.includes('google');
+        const hasGithub = providers.includes('github');
+        const hasEmail  = providers.includes('email');
+
+        if (hasEmail && !hasGoogle && !hasGithub) {
+          showAuthError(
+            'An account with this email already exists with email/password. Please sign in with your email and password.'
+          );
+        } else if (hasGoogle && !hasEmail) {
+          showAuthError(
+            'This Google account is already linked to a different Quickcheck account. Please sign in with Google.'
+          );
+        } else if (hasGithub && !hasEmail) {
+          showAuthError(
+            'This GitHub account is already linked to a different Quickcheck account. Please sign in with GitHub.'
+          );
+        } else {
+          showAuthError(
+            'An account with this email already exists. Please sign in with your existing sign-in method (Google, GitHub, or email/password).'
+          );
+        }
+      } else {
+        showAuthError(
+          'The sign-in attempt failed because this email is already linked to a different sign-in method. Please sign in using the original method (Google, GitHub, or email/password).'
+        );
+      }
+    } else {
+      showAuthError('Authentication failed: ' + xcodeError.message);
+    }
   }
 }
 
@@ -141,8 +183,24 @@ async function handleLoginSubmit(e) {
 
     if (error) {
       const msg = error.message?.toLowerCase() || '';
+
       if (msg.includes('invalid login credentials')) {
-        showAuthError('Invalid email or password.');
+        // Could be wrong password for existing user, or user doesn't exist,
+        // or user exists but with OAuth-only. Check if there's a different
+        // provider linked to this email.
+        const providers = await getIdentityProviders(email);
+
+        if (providers.includes('google')) {
+          showAuthError(
+            'This email is linked to Google Sign-In. Please continue with Google.'
+          );
+        } else if (providers.includes('github')) {
+          showAuthError(
+            'This email is linked to GitHub Sign-In. Please continue with GitHub.'
+          );
+        } else {
+          showAuthError('Invalid email or password.');
+        }
       } else if (msg.includes('email not confirmed')) {
         showAuthError('Please confirm your email before signing in. Check your inbox.');
       } else {
@@ -159,6 +217,23 @@ async function handleLoginSubmit(e) {
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Sign in';
+  }
+}
+
+// ─── Provider detection ───────────────────────────────────────────────────
+// Checks whether an email already has identities linked to it and returns
+// the list of providers (e.g. ["google"], ["github"], ["email"]).
+// Falls back to an empty array if the RPC is not available.
+
+async function getIdentityProviders(email) {
+  try {
+    const { data, error } = await sb.rpc('get_identity_providers', {
+      input_email: email,
+    });
+    if (error) return [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
 }
 
@@ -182,6 +257,50 @@ async function handleRegisterSubmit(e) {
   clearAuthMessages();
 
   try {
+    // ── Check for existing account before attempting signup ──────────
+    const { data: emailExists, error: existsError } = await sb.rpc(
+      'check_email_exists', { input_email: email }
+    );
+
+    if (!existsError && emailExists) {
+      const providers = await getIdentityProviders(email);
+
+      const hasEmail  = providers.includes('email');
+      const hasGoogle = providers.includes('google');
+      const hasGithub = providers.includes('github');
+
+      if (hasGoogle && !hasEmail && !hasGithub) {
+        showAuthError(
+          'An account with this email already exists and is linked to Google Sign-In. Please continue with Google.'
+        );
+        return;
+      }
+      if (hasGithub && !hasEmail && !hasGoogle) {
+        showAuthError(
+          'An account with this email already exists and is linked to GitHub Sign-In. Please continue with GitHub.'
+        );
+        return;
+      }
+      if (hasGoogle && hasEmail) {
+        showAuthError(
+          'An account with this email already exists. You can sign in with your password or continue with Google.'
+        );
+        return;
+      }
+      if (hasGithub && hasEmail) {
+        showAuthError(
+          'An account with this email already exists. You can sign in with your password or continue with GitHub.'
+        );
+        return;
+      }
+      // Generic fallback
+      showAuthError(
+        'An account with this email already exists. Please sign in instead.'
+      );
+      return;
+    }
+
+    // ── Proceed with signup ─────────────────────────────────────────
     const { data, error } = await sb.auth.signUp({
       email,
       password: pass,
@@ -191,7 +310,17 @@ async function handleRegisterSubmit(e) {
       },
     });
 
-    if (error) { showAuthError(error.message); return; }
+    if (error) {
+      const msg = error.message || '';
+      if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('already exists')) {
+        showAuthError(
+          'An account with this email already exists. Please sign in with Google, GitHub, or your password.'
+        );
+      } else {
+        showAuthError(error.message);
+      }
+      return;
+    }
 
     if (data?.user && !data?.session) {
       showAuthMsg('Confirmation email has been sent. Please check your inbox and verify your email.');
