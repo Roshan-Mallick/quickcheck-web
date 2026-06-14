@@ -9,7 +9,8 @@ let parsedData  = null;   // Last parsed markdown import { title, sections }
 let checklists  = [];     // [{ id, title, data: [{id, title, items:[{id,label,checked}]}] }]
 let activeId    = null;   // ID of the currently displayed checklist
 let authView    = 'login';
-let saving      = false;  // Guard against concurrent upsert calls
+const DEV       = true;     // Debug logging — set false in production
+const WS_STORAGE_KEY = 'quickcheck_workspace_id';
 
 // Workspace state (populated by workspace.js)
 let workspaces        = [];
