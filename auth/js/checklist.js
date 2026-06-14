@@ -584,30 +584,27 @@ function doModalSearch() {
     return;
   }
 
+  var source = activeWorkspace ? sharedChecklists : checklists;
   var cl = getActive();
-  if (!cl) {
-    empty.style.display = 'flex';
-    document.getElementById('search-query-display').textContent = q;
-    return;
-  }
-
   var results = [];
 
-  for (var ci = 0; ci < checklists.length; ci++) {
-    if (checklists[ci].title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(checklists[ci].title, q) });
+  for (var ci = 0; ci < source.length; ci++) {
+    if (source[ci].title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(source[ci].title, q) });
     }
   }
 
-  for (var si = 0; si < cl.data.length; si++) {
-    var section = cl.data[si];
-    if (section.title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
-    }
-    for (var ii = 0; ii < section.items.length; ii++) {
-      var item = section.items[ii];
-      if (item.label.toLowerCase().indexOf(q) !== -1) {
-        results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+  if (cl) {
+    for (var si = 0; si < cl.data.length; si++) {
+      var section = cl.data[si];
+      if (section.title.toLowerCase().indexOf(q) !== -1) {
+        results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
+      }
+      for (var ii = 0; ii < section.items.length; ii++) {
+        var item = section.items[ii];
+        if (item.label.toLowerCase().indexOf(q) !== -1) {
+          results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+        }
       }
     }
   }
@@ -757,6 +754,8 @@ document.addEventListener('keydown', function(e) {
 });
 
 document.getElementById('search-input').addEventListener('input', function() {
+  currentSearchQuery = this.value.trim().toLowerCase();
+  doSidebarSearch();
   doModalSearch();
 });
 
