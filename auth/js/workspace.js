@@ -1003,36 +1003,60 @@ function renderManageMembersModal(ws) {
     }
 
     const actionsId = 'mm-act-' + m.id.replace(/-/g, '_');
+    const actionsMenu = actions.length
+      ? `<div class="mm-action-menu" id="${actionsId}">
+           ${actions.map(a => a.type === 'divider'
+             ? '<div class="mm-action-divider"></div>'
+             : `<button class="mm-action-item${a.danger ? ' danger' : ''}" onclick="event.stopPropagation(); handleMemberAction('${esc(m.user_id)}','${a.action}','${esc(m.name)}'${a.role ? ",'"+a.role+"'" : ''})">${esc(a.label)}</button>`
+           ).join('')}
+         </div>`
+      : '';
 
     return `
-      <div class="mm-member-row ${rowClass}" data-user-id="${esc(m.user_id)}">
-        <div class="mm-member-avatar ${avatarClass}">${esc(initial)}</div>
-        <div class="mm-member-name">
-          <span class="mm-member-cell">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</span>
-        </div>
-        <div class="mm-member-email">
-          <span class="mm-member-cell muted">${esc(m.email)}</span>
-        </div>
-        <div class="mm-member-role-cell">
-          <span class="mm-role-badge ${roleClass}">${ROLE_LABELS[m.role] || m.role}</span>
-        </div>
-        <div class="mm-member-status">
-          <span class="mm-status-badge ${m.status}">${m.status === 'active' ? 'Active' : 'Pending'}</span>
-        </div>
-        <div class="mm-member-actions">
-          ${actions.length
-            ? `<button class="mm-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-               </button>
-               <div class="mm-action-menu" id="${actionsId}">
-                ${actions.map(a => a.type === 'divider'
-                  ? '<div class="mm-action-divider"></div>'
-                  : `<button class="mm-action-item${a.danger ? ' danger' : ''}" onclick="event.stopPropagation(); handleMemberAction('${esc(m.user_id)}','${a.action}','${esc(m.name)}'${a.role ? ",'"+a.role+"'" : ''})">${esc(a.label)}</button>`
-                ).join('')}
-               </div>`
-            : ''}
-        </div>
-      </div>`;
+<div class="mm-member-row ${rowClass}" data-user-id="${esc(m.user_id)}">
+  <div class="mm-member-avatar ${avatarClass}">${esc(initial)}</div>
+  <div class="mm-member-name">
+    <span class="mm-member-cell">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</span>
+  </div>
+  <div class="mm-member-email">
+    <span class="mm-member-cell muted">${esc(m.email)}</span>
+  </div>
+  <div class="mm-member-role-cell">
+    <span class="mm-role-badge ${roleClass}">${ROLE_LABELS[m.role] || m.role}</span>
+  </div>
+  <div class="mm-member-status">
+    <span class="mm-status-badge ${m.status}">${m.status === 'active' ? 'Active' : 'Pending'}</span>
+  </div>
+  <div class="mm-member-actions">
+    ${actions.length
+      ? `<button class="mm-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+         </button>${actionsMenu}`
+      : ''}
+  </div>
+</div>
+
+<div class="member-card ${rowClass}" data-user-id="${esc(m.user_id)}">
+  <div class="member-header">
+    <div class="member-avatar ${avatarClass}">${esc(initial)}</div>
+    <div class="member-main">
+      <div class="member-name">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</div>
+      <div class="member-email">${esc(m.email)}</div>
+      <div class="member-badges">
+        <span class="mm-role-badge ${roleClass}">${ROLE_LABELS[m.role] || m.role}</span>
+        <span class="member-status-badge ${m.status}">${m.status === 'active' ? 'Active' : 'Pending'}</span>
+      </div>
+    </div>
+    ${actions.length
+      ? `<div class="member-actions-container">
+          <button class="member-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </button>
+          ${actionsMenu}
+        </div>`
+      : ''}
+  </div>
+</div>`;
   }).join('');
 }
 
@@ -1070,9 +1094,9 @@ async function inviteFromManageMembers() {
 
 function openMemberActions(btnEl, memberId) {
   closeMemberActions();
-  const modal = btnEl.closest('.mm-member-actions');
-  if (!modal) return;
-  const menu = modal.querySelector('.mm-action-menu');
+  const container = btnEl.closest('.mm-member-actions, .member-actions-container');
+  if (!container) return;
+  const menu = container.querySelector('.mm-action-menu');
   if (!menu) return;
   menu.classList.add('open');
   btnEl.classList.add('open');
@@ -1087,7 +1111,7 @@ function closeMemberActions() {
 }
 
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.mm-member-actions')) closeMemberActions();
+  if (!e.target.closest('.mm-member-actions, .member-actions-container')) closeMemberActions();
 });
 
 // ── Handle member actions ───────────────────────────────────────
