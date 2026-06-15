@@ -20,10 +20,20 @@ async function createWorkspace(name) {
   name = name.trim();
   if (!name) { showToast('Workspace name is required.', 'error'); return null; }
   if (!sb || !currentUser) return null;
+
+  const sub = getSubscription();
+  if (workspaces.length >= sub.workspace_limit) {
+    let msg = 'Upgrade to Pro to create up to 5 workspaces.';
+    if (sub.plan === 'pro') msg = 'Upgrade to Team for unlimited workspaces.';
+    showToast(msg, 'error');
+    setTimeout(() => window.location.href = '/#pricing', 2000);
+    return null;
+  }
+
   const btn = document.querySelector('#create-ws-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
   try {
-    const { data, error } = await sb.rpc('create_workspace', { ws_name: name });
+    const { data, error } = await sb.rpc('create_workspace', { ws_name: name, ws_description: '' });
     if (error) { showToast(error.message, 'error'); return null; }
     showToast('Workspace created.');
     await loadWorkspaces();
@@ -42,7 +52,7 @@ async function renameWorkspace(wsId, name) {
   name = name.trim();
   if (!name) { showToast('Name is required.', 'error'); return; }
   if (!sb || !currentUser) return;
-  const { error } = await sb.from('workspaces').update({ name, updated_at: new Date().toISOString() }).eq('id', wsId);
+  const { error } = await sb.rpc('rename_workspace', { ws_id: wsId, ws_name: name });
   if (error) { showToast(error.message, 'error'); return; }
   if (activeWorkspace && activeWorkspace.id === wsId) activeWorkspace.name = name;
   await loadWorkspaces();
@@ -51,7 +61,7 @@ async function renameWorkspace(wsId, name) {
 
 async function deleteWorkspace(wsId) {
   if (!sb || !currentUser) return;
-  const { error } = await sb.from('workspaces').delete().eq('id', wsId);
+  const { error } = await sb.rpc('delete_workspace', { ws_id: wsId });
   if (error) { showToast(error.message, 'error'); return; }
   if (activeWorkspace && activeWorkspace.id === wsId) {
     activeWorkspace = null;
@@ -111,62 +121,45 @@ async function switchToPersonal() {
 async function loadSharedChecklists(wsId) {
   if (!sb || !currentUser) return;
   if (DEV) console.log('[workspace] loadSharedChecklists for ws:', wsId);
-  // Direct query to workspace_checklists may fail with 42501 if RLS is missing.
-  // Try it first; fall back to localStorage cache on permission error.
-  const { data: links, error } = await sb
-    .from('workspace_checklists')
-    .select('id, checklist_id, shared_by, created_at')
-    .eq('workspace_id', wsId);
+  const { data: items, error } = await sb
+    .from('workspace_checklist_items')
+    .select('*')
+    .eq('workspace_id', wsId)
+    .order('created_at', { ascending: false });
   if (error) {
-    if (error.code === '42501') {
-      if (DEV) console.log('[workspace] workspace_checklists 42501, using localStorage cache');
-    } else {
-      console.error('[workspace] loadSharedChecklists error:', error);
-      return;
-    }
+    console.error('[workspace] loadSharedChecklists error:', error);
+    return;
   }
-  let linkData = links;
-  if (!linkData && error?.code === '42501') {
-    const cached = localStorage.getItem('quickcheck_ws_checklists_' + wsId);
-    if (cached) {
-      try { linkData = JSON.parse(cached); } catch (_) { linkData = null; }
-    }
-  }
-  if (!linkData || !linkData.length) { sharedChecklists = []; if (DEV) console.log('[workspace] no shared checklists found'); return; }
-  const ids = linkData.map(l => l.checklist_id);
-  if (DEV) console.log('[workspace] shared checklist ids:', ids);
-  const { data: checklistsData, error: clError } = await sb
-    .from('checklists')
-    .select('id, title, data, user_id')
-    .in('id', ids);
-  if (clError) { console.error('[workspace] loadSharedChecklists (checklists):', clError); return; }
-  const checklistMap = {};
-  for (const cl of (checklistsData || [])) checklistMap[cl.id] = cl;
-  sharedChecklists = linkData
-    .filter(l => checklistMap[l.checklist_id])
-    .map(l => ({
-      id: l.checklist_id,
-      title: checklistMap[l.checklist_id].title,
-      data: checklistMap[l.checklist_id].data,
-      _shared: true,
-      _owner_id: checklistMap[l.checklist_id].user_id,
-      _shared_by: l.shared_by,
-      _shared_at: l.created_at,
-    }));
+  sharedChecklists = (items || []).map(item => ({
+    id: item.id,
+    title: item.title,
+    data: item.data,
+    _workspace: true,
+  }));
   if (DEV) console.log('[workspace] loaded shared checklists:', sharedChecklists.length);
 }
 
 async function shareChecklist(wsId, checklistId) {
   if (!sb || !currentUser) return;
   if (DEV) console.log('[workspace] shareChecklist:', checklistId, 'to ws:', wsId);
-  const { error } = await sb.rpc('share_checklist_to_workspace', {
-    chk_id: checklistId,
-    ws_id: wsId,
-  });
+  const { data: src, error: fetchErr } = await sb
+    .from('checklists')
+    .select('id, title, data')
+    .eq('id', checklistId)
+    .eq('user_id', currentUser.id)
+    .single();
+  if (fetchErr || !src) { showToast('Source checklist not found.', 'error'); return; }
+  const { error } = await sb.from('workspace_checklist_items').upsert({
+    id: src.id,
+    workspace_id: wsId,
+    title: src.title,
+    data: src.data,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' });
   if (error) { console.error('[workspace] shareChecklist error:', error); showToast(error.message, 'error'); return; }
   showToast('Checklist shared to workspace.');
   if (activeWorkspace && activeWorkspace.id === wsId) {
-    await loadSharedChecklists(wsId);
+    sharedChecklists.unshift({ id: src.id, title: src.title, data: src.data, _workspace: true });
     renderSidebar();
   }
 }
@@ -174,14 +167,12 @@ async function shareChecklist(wsId, checklistId) {
 async function unshareChecklist(wsId, checklistId) {
   if (!sb || !currentUser) return;
   showConfirmModal({
-    label: 'Unshare checklist',
+    label: 'Remove',
     title: 'Remove from workspace?',
-    message: 'The checklist will be removed from this workspace but remains in your personal checklists.',
+    message: 'This removes the workspace copy. Your personal copy is not affected.',
     onConfirm: async () => {
-      const { error } = await sb.rpc('unshare_checklist_from_workspace', {
-        chk_id: checklistId,
-        ws_id: wsId,
-      });
+      const { error } = await sb.from('workspace_checklist_items').delete()
+        .eq('id', checklistId).eq('workspace_id', wsId);
       if (error) { showToast(error.message, 'error'); return; }
       showToast('Checklist removed from workspace.');
       if (activeWorkspace && activeWorkspace.id === wsId) {
@@ -197,18 +188,15 @@ async function unshareChecklist(wsId, checklistId) {
 
 async function loadWorkspaceMembers(wsId) {
   if (!sb || !currentUser) return;
-  const { data, error } = await sb
-    .from('workspace_members')
-    .select('id, user_id, role, status, created_at')
-    .eq('workspace_id', wsId);
+  const { data, error } = await sb.rpc('get_workspace_members', { ws_id: wsId });
   if (error) { console.error('loadWorkspaceMembers:', error); workspaceMembers = []; return; }
   workspaceMembers = (data || []).map(m => ({
     id: m.id,
     user_id: m.user_id,
     role: m.role,
     status: m.status,
-    email: m.user_id === currentUser?.id ? (currentUser?.email || '') : '',
-    name: m.user_id === currentUser?.id ? getDisplayName(currentUser) : 'User',
+    email: m.email || '',
+    name: m.name || 'User',
     created_at: m.created_at,
   }));
   renderWorkspaceMembers();
@@ -217,6 +205,17 @@ async function loadWorkspaceMembers(wsId) {
 async function inviteToWorkspace(wsId, email, role) {
   if (!sb || !currentUser) return;
   if (!email) { showToast('Enter an email address.', 'error'); return; }
+
+  const plan = activeWorkspace?.plan || getSubscription().plan;
+  if (plan === 'pro') {
+    const count = workspaceMembers.filter(m => m.status === 'active').length;
+    if (count >= 5) {
+      showToast('Upgrade to Team for unlimited members.', 'error');
+      setTimeout(() => window.location.href = '/#pricing', 2000);
+      return;
+    }
+  }
+
   const btn = document.querySelector('#invite-ws-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   try {
@@ -243,11 +242,7 @@ async function removeWorkspaceMember(wsId, userId) {
     title: 'Remove member?',
     message: 'They will lose access to all shared checklists in this workspace.',
     onConfirm: async () => {
-      const { error } = await sb
-        .from('workspace_members')
-        .delete()
-        .eq('workspace_id', wsId)
-        .eq('user_id', userId);
+      const { error } = await sb.rpc('remove_workspace_member', { ws_id: wsId, target_user_id: userId });
       if (error) { showToast(error.message, 'error'); return; }
       showToast('Member removed.');
       await loadWorkspaceMembers(wsId);
@@ -257,11 +252,7 @@ async function removeWorkspaceMember(wsId, userId) {
 
 async function changeMemberRole(wsId, userId, role) {
   if (!sb || !currentUser) return;
-  const { error } = await sb
-    .from('workspace_members')
-    .update({ role })
-    .eq('workspace_id', wsId)
-    .eq('user_id', userId);
+  const { error } = await sb.rpc('change_member_role', { ws_id: wsId, target_user_id: userId, new_role: role });
   if (error) { showToast(error.message, 'error'); return; }
   showToast('Role updated.');
   await loadWorkspaceMembers(wsId);
@@ -479,6 +470,10 @@ function formatAction(action, meta) {
     case 'workspace_created': return 'created this workspace';
     case 'member_invited': return `invited ${meta.email || 'a member'}`;
     case 'member_accepted': return 'joined the workspace';
+    case 'member_removed': return `removed ${meta.email || 'a member'}`;
+    case 'member_role_changed': return `changed role of ${meta.email || 'a member'}`;
+    case 'ownership_transferred': return 'transferred ownership';
+    case 'workspace_left': return 'left the workspace';
     case 'invitation_sent': return `sent invitation to ${meta.email || 'email'}`;
     case 'checklist_shared': return 'shared a checklist';
     case 'checklist_unshared': return 'removed a checklist';
@@ -524,9 +519,31 @@ function showShareModal(checklistId) {
 
 function showCreateWorkspaceModal() {
   closeWsDropdown();
+
+  const sub = getSubscription();
   const modal = document.getElementById('create-workspace-modal');
   if (!modal) return;
   document.getElementById('create-ws-name').value = '';
+
+  const limitInfo = document.getElementById('create-ws-limit-info');
+  const btn = document.getElementById('create-ws-btn');
+  const limits = { free: 1, pro: 5, team: Infinity };
+  const limit = limits[sub.plan] ?? 1;
+  const remaining = limit - workspaces.length;
+
+  if (sub.plan === 'team') {
+    if (limitInfo) limitInfo.textContent = '';
+    if (btn) btn.disabled = false;
+  } else if (remaining <= 0) {
+    const upgradeMsg = sub.plan === 'free' ? 'Upgrade to Pro to create up to 5 workspaces.' : 'Upgrade to Team for unlimited workspaces.';
+    if (limitInfo) limitInfo.textContent = upgradeMsg;
+    if (btn) btn.disabled = true;
+  } else {
+    const limitMsg = sub.plan === 'free' ? 'Free plan allows 1 workspace.' : 'Pro plan allows up to 5 workspaces.';
+    if (limitInfo) limitInfo.textContent = remaining + ' of ' + limit + ' workspaces remaining. ' + limitMsg;
+    if (btn) btn.disabled = false;
+  }
+
   modal.classList.add('open');
   setTimeout(() => document.getElementById('create-ws-name').focus(), 100);
 }
@@ -538,6 +555,24 @@ function showInviteMemberModal() {
   if (!modal) return;
   document.getElementById('invite-member-email').value = '';
   document.getElementById('invite-member-role').value = 'editor';
+
+  const sub = getSubscription();
+  const limitInfo = document.getElementById('invite-member-limit-info');
+  const btn = document.getElementById('invite-ws-btn');
+  const plan = activeWorkspace?.plan || sub.plan;
+
+  if (plan === 'team') {
+    if (limitInfo) limitInfo.textContent = '';
+    if (btn) btn.disabled = false;
+  } else if (plan === 'pro') {
+    const count = workspaceMembers.filter(m => m.status === 'active').length;
+    if (limitInfo) limitInfo.textContent = count + ' active members. 5 member limit per workspace.';
+    if (btn) btn.disabled = count >= 5;
+  } else {
+    if (limitInfo) limitInfo.textContent = 'Team collaboration requires Pro or Team plan.';
+    if (btn) btn.disabled = true;
+  }
+
   modal.classList.add('open');
   setTimeout(() => document.getElementById('invite-member-email').focus(), 100);
 }
@@ -597,27 +632,36 @@ function updateWorkspaceBillingInfo() {
   const el = document.getElementById('ws-billing-info');
   if (!el) return;
   const plan = activeWorkspace?.plan || 'free';
-  const limits = plan === 'team'
-    ? { members: 10, checklists: 500 }
-    : { members: 1, checklists: 50 };
+  const labels = { free: 'Free', pro: 'Pro', team: 'Team' };
+  const limits = plan === 'free'
+    ? { members: 1, checklists: 50, activity: 'N/A' }
+    : plan === 'pro'
+      ? { members: 5, checklists: 99999, activity: 'Enabled' }
+      : { members: 99999, checklists: 99999, activity: 'Enabled' };
   el.innerHTML = `
     <div class="ws-billing-row">
       <span>Plan</span>
-      <span class="ws-billing-value">${plan === 'team' ? 'Team' : 'Free'}</span>
+      <span class="ws-billing-value">${labels[plan] || 'Free'}</span>
     </div>
     <div class="ws-billing-row">
       <span>Max members</span>
-      <span class="ws-billing-value">${limits.members}</span>
+      <span class="ws-billing-value">${limits.members >= 99999 ? 'Unlimited' : limits.members}</span>
     </div>
     <div class="ws-billing-row">
       <span>Max checklists</span>
-      <span class="ws-billing-value">${limits.checklists}</span>
+      <span class="ws-billing-value">${limits.checklists >= 99999 ? 'Unlimited' : limits.checklists}</span>
     </div>
     <div class="ws-billing-row">
       <span>Activity log</span>
-      <span class="ws-billing-value">${plan === 'team' ? 'Enabled' : 'N/A'}</span>
+      <span class="ws-billing-value">${limits.activity}</span>
     </div>
-    <p class="ws-billing-note">${plan === 'free' ? 'Contact us to upgrade to Team plan.' : ''}</p>
+    <p class="ws-billing-note">
+      ${plan === 'free'
+        ? '<a href="/#pricing" style="color:var(--accent)">Upgrade to Pro or Team →</a>'
+        : plan === 'pro'
+          ? '<a href="/#pricing" style="color:var(--accent)">Compare Team plan →</a>'
+          : 'Enterprise features available on request.'}
+    </p>
   `;
 }
 
@@ -798,10 +842,7 @@ async function submitWorkspaceDescription() {
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     if (!sb || !currentUser) { showToast('Not authenticated.', 'error'); return; }
-    const { error } = await sb.from('workspaces').update({
-      description: description || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', wsId);
+    const { error } = await sb.rpc('update_workspace_description', { ws_id: wsId, ws_description: description });
     if (error) { showToast(error.message, 'error'); return; }
     const ws = workspaces.find(w => w.id === wsId);
     if (ws) ws.description = description;
@@ -836,36 +877,305 @@ async function copyInviteLink(wsId) {
   }
 }
 
-// ─── UI — Manage Members ───────────────────────────────────────────────
+// ─── UI — Manage Members Modal ─────────────────────────────────────────
 
 async function showManageMembers(wsId) {
   closeWorkspaceSettingsMenu();
-  // Load this workspace's data if not already active
   const ws = workspaces.find(w => w.id === wsId);
   if (!ws) return;
-  await showWorkspaceSettings(wsId);
-  showWsSettingsTab('members');
+  const modal = document.getElementById('manage-members-modal');
+  if (!modal) return;
+  modal.dataset.wsId = wsId;
+  await loadWorkspaceMembers(wsId);
+  renderManageMembersModal(ws);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+const ROLE_LABELS = { owner: 'Owner', admin: 'Admin', editor: 'Member', viewer: 'Viewer' };
+const ROLE_HIERARCHY = { owner: 3, admin: 2, editor: 1, viewer: 0 };
+
+function renderManageMembersModal(ws) {
+  const sub = getSubscription();
+  const plan = ws.plan || sub.plan || 'free';
+  const activeMembers = workspaceMembers.filter(m => m.status === 'active');
+  const total = workspaceMembers.length;
+  const planLabel = { free: 'Free', pro: 'Pro', team: 'Team' }[plan] || 'Free';
+  const currentUserId = currentUser?.id;
+
+  // ── Workspace info bar ───────────────────────────────────────
+  document.getElementById('mm-ws-name').textContent = ws.name;
+  const badge = document.getElementById('mm-plan-badge');
+  badge.textContent = planLabel;
+  badge.className = 'mm-plan-badge plan-' + (plan === 'team' ? 'team' : plan === 'pro' ? '' : 'free');
+
+  const countEl = document.getElementById('mm-member-count');
+  if (plan === 'team') {
+    countEl.textContent = activeMembers.length + ' members (Unlimited)';
+  } else if (plan === 'pro') {
+    countEl.textContent = activeMembers.length + ' / 5 members';
+  } else {
+    countEl.textContent = activeMembers.length + ' / 1 members';
+  }
+
+  // ── Invite section ───────────────────────────────────────────
+  const inviteSection = document.getElementById('mm-invite-section');
+  const inviteBtn = document.getElementById('mm-invite-btn');
+  const inviteInput = document.getElementById('mm-invite-email');
+  const inviteLimit = document.getElementById('mm-invite-limit');
+
+  if (plan === 'free') {
+    inviteSection.classList.add('disabled');
+    inviteInput.disabled = true;
+    inviteBtn.disabled = true;
+    inviteLimit.textContent = 'Team collaboration is not available on Free plan.';
+  } else if (plan === 'pro') {
+    inviteSection.classList.remove('disabled');
+    inviteInput.disabled = false;
+    const atLimit = activeMembers.length >= 5;
+    inviteBtn.disabled = atLimit;
+    inviteLimit.textContent = atLimit
+      ? 'Member limit reached. Upgrade to Team for unlimited members.'
+      : (5 - activeMembers.length) + ' of 5 member slots available.';
+  } else {
+    inviteSection.classList.remove('disabled');
+    inviteInput.disabled = false;
+    inviteBtn.disabled = false;
+    inviteLimit.textContent = '';
+  }
+
+  // ── Upgrade banner (Free only) ───────────────────────────────
+  const banner = document.getElementById('mm-upgrade-banner');
+  banner.style.display = plan === 'free' ? 'flex' : 'none';
+
+  // ── My role ──────────────────────────────────────────────────
+  const myRole = workspaceMembers.find(m => m.user_id === currentUserId)?.role || null;
+  const isOwner = myRole === 'owner';
+  const isAdmin = myRole === 'admin';
+
+  // ── Leave button ─────────────────────────────────────────────
+  const leaveBtn = document.getElementById('mm-leave-btn');
+  leaveBtn.style.display = isOwner ? 'none' : 'inline-flex';
+
+  // ── Members list ─────────────────────────────────────────────
+  const list = document.getElementById('mm-members-list');
+  if (!workspaceMembers.length) {
+    list.innerHTML = '<div class="mm-empty">No members yet.</div>';
+    return;
+  }
+
+  list.innerHTML = workspaceMembers.map(m => {
+    const isMe = m.user_id === currentUserId;
+    const initial = (m.name?.[0] || m.email?.[0] || '?').toUpperCase();
+    const roleClass = m.role === 'owner' ? 'role-owner' : m.role === 'admin' ? 'role-admin' : '';
+    const avatarClass = m.role === 'owner' ? 'owner-bg' : m.role === 'admin' ? 'admin-bg' : '';
+    const rowClass = m.status === 'pending' ? 'pending' : '';
+
+    // Determine which actions menu items to show
+    let actions = [];
+    if (isOwner && !isMe && m.status === 'active') {
+      if (m.role === 'admin') {
+        actions.push({ label: 'Make Member', action: 'downgrade', role: 'editor' });
+        actions.push({ type: 'divider' });
+        actions.push({ label: 'Transfer Ownership', action: 'transfer' });
+        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
+      } else if (m.role === 'editor' || m.role === 'viewer') {
+        actions.push({ label: 'Make Admin', action: 'promote', role: 'admin' });
+        actions.push({ type: 'divider' });
+        actions.push({ label: 'Transfer Ownership', action: 'transfer' });
+        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
+      }
+    } else if (isAdmin && !isMe && m.status === 'active') {
+      if (m.role === 'editor' || m.role === 'viewer') {
+        actions.push({ label: 'Make Admin', action: 'promote', role: 'admin' });
+        actions.push({ type: 'divider' });
+        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
+      }
+    }
+
+    const actionsId = 'mm-act-' + m.id.replace(/-/g, '_');
+
+    return `
+      <div class="mm-member-row ${rowClass}" data-user-id="${esc(m.user_id)}">
+        <div class="mm-member-avatar ${avatarClass}">${esc(initial)}</div>
+        <div class="mm-member-name">
+          <span class="mm-member-cell">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</span>
+        </div>
+        <div class="mm-member-email">
+          <span class="mm-member-cell muted">${esc(m.email)}</span>
+        </div>
+        <div class="mm-member-role-cell">
+          <span class="mm-role-badge ${roleClass}">${ROLE_LABELS[m.role] || m.role}</span>
+        </div>
+        <div class="mm-member-status">
+          <span class="mm-status-badge ${m.status}">${m.status === 'active' ? 'Active' : 'Pending'}</span>
+        </div>
+        <div class="mm-member-actions">
+          ${actions.length
+            ? `<button class="mm-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+               </button>
+               <div class="mm-action-menu" id="${actionsId}">
+                ${actions.map(a => a.type === 'divider'
+                  ? '<div class="mm-action-divider"></div>'
+                  : `<button class="mm-action-item${a.danger ? ' danger' : ''}" onclick="event.stopPropagation(); handleMemberAction('${esc(m.user_id)}','${a.action}','${esc(m.name)}'${a.role ? ",'"+a.role+"'" : ''})">${esc(a.label)}</button>`
+                ).join('')}
+               </div>`
+            : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Invite from Manage Members modal ─────────────────────────────
+
+async function inviteFromManageMembers() {
+  const modal = document.getElementById('manage-members-modal');
+  const wsId = modal.dataset.wsId;
+  if (!wsId) return;
+  const email = document.getElementById('mm-invite-email').value.trim();
+  if (!email) { showToast('Enter an email address.', 'error'); return; }
+  const role = document.getElementById('mm-invite-role').value;
+  const btn = document.getElementById('mm-invite-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const { data, error } = await sb.rpc('invite_to_workspace', {
+      ws_id: wsId,
+      invite_email: email,
+      invite_role: role,
+    });
+    if (error) { showToast(error.message, 'error'); return; }
+    showToast('Invitation sent.');
+    document.getElementById('mm-invite-email').value = '';
+    await loadWorkspaceMembers(wsId);
+    const ws = workspaces.find(w => w.id === wsId);
+    if (ws) renderManageMembersModal(ws);
+  } catch (err) {
+    showToast(err.message || 'Failed to send invitation.', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Invite';
+  }
+}
+
+// ── Actions menu ────────────────────────────────────────────────
+
+function openMemberActions(btnEl, memberId) {
+  closeMemberActions();
+  const modal = btnEl.closest('.mm-member-actions');
+  if (!modal) return;
+  const menu = modal.querySelector('.mm-action-menu');
+  if (!menu) return;
+  menu.classList.add('open');
+  btnEl.classList.add('open');
+  menu._ownerBtn = btnEl;
+}
+
+function closeMemberActions() {
+  document.querySelectorAll('.mm-action-menu.open').forEach(m => {
+    m.classList.remove('open');
+    if (m._ownerBtn) m._ownerBtn.classList.remove('open');
+  });
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.mm-member-actions')) closeMemberActions();
+});
+
+// ── Handle member actions ───────────────────────────────────────
+
+function handleMemberAction(userId, action, userName, role) {
+  closeMemberActions();
+  const modal = document.getElementById('manage-members-modal');
+  const wsId = modal.dataset.wsId;
+  if (!wsId) return;
+
+  switch (action) {
+    case 'promote':
+      changeMemberRole(wsId, userId, role || 'admin');
+      break;
+    case 'downgrade':
+      changeMemberRole(wsId, userId, role || 'editor');
+      break;
+    case 'transfer':
+      confirmTransferOwnership(wsId, userId, userName);
+      break;
+    case 'remove':
+      confirmRemoveMember(wsId, userId, userName);
+      break;
+  }
+}
+
+// ── Transfer Ownership ──────────────────────────────────────────
+
+function confirmTransferOwnership(wsId, userId, userName) {
+  showConfirmModal({
+    label: 'Transfer Ownership',
+    title: 'Transfer Workspace Ownership',
+    message: 'You are about to transfer ownership of this workspace to "' + userName + '".\n\nThis action will make them the new owner and downgrade you to Admin.',
+    onConfirm: async () => {
+      const { error } = await sb.rpc('transfer_workspace_ownership', { ws_id: wsId, new_owner_id: userId });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Ownership transferred to ' + userName + '.');
+      await loadWorkspaces();
+      await loadWorkspaceMembers(wsId);
+      const ws = workspaces.find(w => w.id === wsId);
+      if (ws) renderManageMembersModal(ws);
+    }
+  });
+}
+
+// ── Remove Member ───────────────────────────────────────────────
+
+function confirmRemoveMember(wsId, userId, userName) {
+  showConfirmModal({
+    label: 'Remove Member',
+    title: 'Remove Member',
+    message: 'Are you sure you want to remove "' + userName + '" from this workspace?',
+    onConfirm: async () => {
+      const { error } = await sb.rpc('remove_workspace_member', { ws_id: wsId, target_user_id: userId });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('Member removed.');
+      await loadWorkspaceMembers(wsId);
+      const ws = workspaces.find(w => w.id === wsId);
+      if (ws) renderManageMembersModal(ws);
+    }
+  });
+}
+
+// ── Leave Workspace ────────────────────────────────────────────
+
+function confirmLeaveWorkspace(wsId) {
+  if (!wsId) {
+    const modal = document.getElementById('manage-members-modal');
+    wsId = modal?.dataset.wsId;
+  }
+  if (!wsId) return;
+  showConfirmModal({
+    label: 'Leave Workspace',
+    title: 'Leave Workspace',
+    message: 'You will lose access to this workspace and all its shared checklists.',
+    onConfirm: async () => {
+      const { error } = await sb.rpc('leave_workspace', { ws_id: wsId });
+      if (error) { showToast(error.message, 'error'); return; }
+      showToast('You left the workspace.');
+      closeModal('manage-members-modal');
+      if (activeWorkspace && activeWorkspace.id === wsId) {
+        activeWorkspace = null;
+        localStorage.removeItem(WS_STORAGE_KEY);
+        sharedChecklists = [];
+        await loadChecklists();
+        renderSidebar();
+      }
+      await loadWorkspaces();
+    }
+  });
 }
 
 // ─── UI — Leave Workspace ──────────────────────────────────────────────
 
-function confirmLeaveWorkspace(wsId) {
-  closeWorkspaceSettingsMenu();
-  showConfirmModal({
-    label: 'Leave workspace',
-    title: 'Leave this workspace?',
-    message: 'You will lose access to all shared checklists in this workspace.',
-    onConfirm: () => leaveWorkspace(wsId),
-  });
-}
-
 async function leaveWorkspace(wsId) {
   if (!sb || !currentUser) return;
-  const { error } = await sb
-    .from('workspace_members')
-    .delete()
-    .eq('workspace_id', wsId)
-    .eq('user_id', currentUser.id);
+  const { error } = await sb.rpc('leave_workspace', { ws_id: wsId });
   if (error) { showToast(error.message, 'error'); return; }
   showToast('You left the workspace.');
   if (activeWorkspace && activeWorkspace.id === wsId) {

@@ -81,7 +81,7 @@ function showAccountModal() {
 }
 
 function showAccountSection(section) {
-  const sections = ['profile', 'email', 'password', 'invite', 'danger'];
+  const sections = ['profile', 'email', 'password', 'plan', 'invite', 'danger'];
 
   // Show only the selected section panel
   sections.forEach(s => {
@@ -310,6 +310,75 @@ async function handleDeleteAccount() {
   }
 }
 
+// ─── Subscription ─────────────────────────────────────────────────────────
+
+const PLAN_HIERARCHY = { free: 0, pro: 1, team: 2 };
+
+async function getUserSubscription() {
+  if (!sb || !currentUser) return { plan: 'free', workspace_limit: 1 };
+  try {
+    const { data, error } = await sb.rpc('get_user_subscription');
+    if (error || !data || data.length === 0) {
+      return { plan: 'free', workspace_limit: 1 };
+    }
+    return data[0];
+  } catch (err) {
+    console.error('getUserSubscription error:', err);
+    return { plan: 'free', workspace_limit: 1 };
+  }
+}
+
+function getSubscription() {
+  return window.userSubscription || { plan: 'free', workspace_limit: 1 };
+}
+
+function requirePlan(minPlan, featureName) {
+  const sub = getSubscription();
+  const current = PLAN_HIERARCHY[sub.plan] ?? 0;
+  const required = PLAN_HIERARCHY[minPlan] ?? 0;
+  if (current >= required) return true;
+
+  const msgs = {
+    free: {
+      pro: 'Upgrade to Pro for 5 workspaces, team collaboration, and more.',
+      team: 'Upgrade to Team for unlimited workspaces and members.',
+    },
+    pro: {
+      team: 'Upgrade to Team for unlimited workspaces and members.',
+    },
+  };
+  const msg = (msgs[sub.plan] && msgs[sub.plan][minPlan]) || `Upgrade to ${minPlan.charAt(0).toUpperCase() + minPlan.slice(1)} to access this feature.`;
+  const feature = featureName ? `"${featureName}"` : 'This feature';
+
+  showToast(`${feature} is not available on your plan. ${msg}`, 'error');
+  setTimeout(() => window.location.href = '/#pricing', 2000);
+  return false;
+}
+
+function updateAccountPlanDisplay() {
+  const sub = getSubscription();
+  const badge = document.getElementById('account-plan-badge');
+  const detail = document.getElementById('account-plan-detail');
+  const membersRow = document.getElementById('account-plan-members-row');
+  const membersDetail = document.getElementById('account-plan-members-detail');
+  if (!badge) return;
+  const labels = { free: 'Free', pro: 'Pro', team: 'Team' };
+  badge.textContent = labels[sub.plan] || 'Free';
+  badge.className = 'plan-badge plan-badge--' + (sub.plan || 'free');
+  if (detail) {
+    const limits = { free: '1 Workspace', pro: '5 Workspaces', team: 'Unlimited Workspaces' };
+    detail.textContent = limits[sub.plan] || '1 Workspace';
+  }
+  if (membersRow && membersDetail) {
+    if (sub.plan === 'free') {
+      membersRow.style.display = 'none';
+    } else {
+      membersRow.style.display = '';
+      membersDetail.textContent = sub.plan === 'pro' ? '5 Members / Workspace' : 'Unlimited Members';
+    }
+  }
+}
+
 // ─── App entry point ──────────────────────────────────────────────────────
 // Called after a successful sign-in or session restore.
 
@@ -317,6 +386,11 @@ async function enterApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display  = 'block';
   updateUserDisplay();
+
+  window.userSubscription = await getUserSubscription();
+  if (DEV) console.log('[account] subscription:', window.userSubscription);
+  updateAccountPlanDisplay();
+
   await loadWorkspaces();
 
   const savedId = localStorage.getItem(WS_STORAGE_KEY);

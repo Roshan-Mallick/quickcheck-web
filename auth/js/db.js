@@ -16,30 +16,7 @@ async function loadChecklists() {
 
   if (error) { console.error('[db] loadChecklists error:', error); showToast('Load failed: ' + error.message, 'error'); return; }
 
-  // Exclude checklists that are linked to any workspace — they belong to the workspace view only
-  const wsChecklistIds = new Set();
-  const { data: wsLinks, error: wsErr } = await sb
-    .from('workspace_checklists')
-    .select('checklist_id');
-  if (wsErr && wsErr.code !== '42501') {
-    console.error('[db] loadChecklists workspace_checklists error:', wsErr);
-  }
-  if (wsLinks) wsLinks.forEach(l => wsChecklistIds.add(l.checklist_id));
-  // If the direct query was denied (42501), try the localStorage cache from shareChecklist
-  if (wsErr && wsErr.code === '42501') {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('quickcheck_ws_checklists_')) {
-        try {
-          const cached = JSON.parse(localStorage.getItem(key));
-          if (Array.isArray(cached)) cached.forEach(l => wsChecklistIds.add(l.checklist_id));
-        } catch (_) {}
-      }
-    }
-  }
-
   checklists = (data || [])
-    .filter(r => !wsChecklistIds.has(r.id))
     .map(r => ({ id: r.id, title: r.title, data: r.data }));
   if (DEV) console.log('[db] loaded personal checklists:', checklists.length);
   renderSidebar();
@@ -52,6 +29,26 @@ async function persistChecklist(cl) {
   }
 
   if (DEV) console.log('[db] persistChecklist:', cl.id, cl.title, 'ws mode:', !!activeWorkspace);
+
+  if (activeWorkspace) {
+    const { error } = await sb.from('workspace_checklist_items').upsert(
+      {
+        id:           cl.id,
+        workspace_id: activeWorkspace.id,
+        title:        cl.title,
+        data:         cl.data,
+        updated_at:   new Date().toISOString(),
+      },
+      { onConflict: 'id' }
+    );
+    if (error) {
+      console.error('[db] persistChecklist (workspace) error:', error);
+      showToast('Save failed: ' + error.message, 'error');
+    } else {
+      if (DEV) console.log('[db] persistChecklist (workspace) success:', cl.id);
+    }
+    return;
+  }
 
   const { error } = await sb.from('checklists').upsert(
     {
@@ -78,11 +75,16 @@ async function deleteChecklist(id) {
     return;
   }
 
-  if (DEV) console.log('[db] deleteChecklist:', id);
+  if (DEV) console.log('[db] deleteChecklist:', id, 'ws mode:', !!activeWorkspace);
 
   try {
-    const { error } = await sb.from('checklists').delete().eq('id', id);
-    if (error) { console.error('[db] deleteChecklist error:', error); showToast('Delete failed: ' + error.message, 'error'); return; }
+    if (activeWorkspace) {
+      const { error } = await sb.from('workspace_checklist_items').delete().eq('id', id).eq('workspace_id', activeWorkspace.id);
+      if (error) { console.error('[db] deleteChecklist (workspace) error:', error); showToast('Delete failed: ' + error.message, 'error'); return; }
+    } else {
+      const { error } = await sb.from('checklists').delete().eq('id', id);
+      if (error) { console.error('[db] deleteChecklist error:', error); showToast('Delete failed: ' + error.message, 'error'); return; }
+    }
     checklists = checklists.filter(c => c.id !== id);
     sharedChecklists = sharedChecklists.filter(c => c.id !== id);
     if (activeId === id) { activeId = null; showEmptyState(); }

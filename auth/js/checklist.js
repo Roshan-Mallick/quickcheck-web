@@ -15,12 +15,7 @@ async function createBlankChecklist() {
   renderSidebar();
   loadChecklist(cl.id);
   setTimeout(() => startEditTitle(), 50);
-  if (activeWorkspace) {
-    await persistChecklist(cl);
-    await shareChecklist(activeWorkspace.id, cl.id);
-  } else {
-    await persistChecklist(cl);
-  }
+  await persistChecklist(cl);
 }
 
 function importChecklist() {
@@ -65,14 +60,12 @@ function renderSidebar() {
 
     const item = document.createElement('div');
     item.className = 'list-item' + (cl.id === activeId ? ' active' : '');
-    const shareBtn = activeWorkspace
-      ? `<button class="list-item-share-btn" onclick="event.stopPropagation(); unshareChecklist('${activeWorkspace.id}', '${cl.id}')" title="Remove from workspace"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
-      : `<button class="list-item-share-btn" onclick="event.stopPropagation(); showShareModal('${cl.id}')" title="Share to workspace"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button>`;
+    const trashSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
     item.innerHTML = `
       <span class="list-item-icon">${activeWorkspace ? '🏢' : '☑'}</span>
       <span class="list-item-name">${esc(cl.title)}</span>
       <span class="list-item-count">${checked}/${total}</span>
-      ${shareBtn}
+      <button class="list-item-delete-btn" onclick="event.stopPropagation(); confirmDeleteSidebarItem('${cl.title.replace(/'/g, "\\'")}', '${cl.id}')" title="Delete checklist">${trashSvg}</button>
     `;
     item.onclick = () => loadChecklist(cl.id);
     el.appendChild(item);
@@ -800,3 +793,12 @@ document.getElementById('search-input').addEventListener('keydown', function(e) 
     handleSearchResult(type, si, ii, ci);
   }
 });
+
+function confirmDeleteSidebarItem(name, id) {
+  showConfirmModal({
+    label: 'Delete Checklist',
+    title: 'Delete Checklist',
+    message: 'Are you sure you want to delete "' + name + '"?\nThis action cannot be undone.',
+    onConfirm: () => deleteChecklist(id),
+  });
+}

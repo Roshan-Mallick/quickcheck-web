@@ -487,7 +487,7 @@ body {
 
 /* "Search" input in sidebar */
 .sidebar-search {
-  position: relative; margin-top: 6px;
+  position: relative; margin-top: 16px;
   display: flex; align-items: center; gap: 6px;
   background: var(--surface2);
   border: 1px solid var(--border2);
@@ -1365,6 +1365,10 @@ body {
     max-height: 70vh;
     box-shadow: 0 2px 12px rgba(0,0,0,0.30);
   }
+
+  /* Always show delete/share buttons on mobile (no hover) */
+  .list-item-delete-btn,
+  .list-item-share-btn { opacity: 1; }
 }
 
 
@@ -1657,6 +1661,17 @@ body {
 .list-item-share-btn:hover { color: var(--accent); background: var(--surface3); }
 .list-item:hover .list-item-share-btn { opacity: 1; }
 
+/* ── Sidebar delete button ───────────────────────────────────── */
+.list-item-delete-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); padding: 4px; flex-shrink: 0;
+  opacity: 0; transition: opacity 0.15s, color 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+}
+.list-item-delete-btn:hover { color: var(--danger); background: var(--surface3); }
+.list-item:hover .list-item-delete-btn { opacity: 1; }
+
 /* ── Select element styling ────────────────────────────────── */
 .account-field select {
   width: 100%; background: var(--surface2); border: 1px solid var(--border2);
@@ -1863,5 +1878,300 @@ body {
     display: none;
   }
   .ws-settings-menu-backdrop.open { display: block; }
+}
+
+/* ── Plan badge & info card ─────────────────────────────── */
+.plan-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.plan-badge--free {
+  background: rgba(100,116,139,0.15);
+  color: #94a3b8;
+}
+.plan-badge--pro {
+  background: rgba(99,102,241,0.15);
+  color: #818cf8;
+}
+.plan-badge--team {
+  background: rgba(251,191,36,0.15);
+  color: #fbbf24;
+}
+.plan-info-card {
+  background: var(--bg2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.plan-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+.plan-info-row + .plan-info-row {
+  border-top: 1px solid var(--border);
+}
+.plan-info-label {
+  color: var(--text3);
+  font-size: 0.875rem;
+}
+.plan-info-value {
+  color: var(--text1);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.plan-upgrade-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.plan-upgrade-link:hover {
+  text-decoration: underline;
+}
+
+/* ─── Manage Members Modal ──────────────────────────────────────────── */
+.manage-members-modal {
+  max-width: 800px !important;
+  padding: 0 !important;
+  display: flex; flex-direction: column;
+  max-height: 92vh;
+}
+
+.mm-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: clamp(20px, 3vw, 28px) clamp(20px, 3vw, 28px) 0;
+}
+.mm-close-btn {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  padding: 4px; border-radius: 6px; flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.mm-close-btn:hover { color: var(--text); background: var(--surface3); }
+
+.mm-ws-info {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px clamp(20px, 3vw, 28px);
+  border-bottom: 1px solid var(--border);
+}
+.mm-ws-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.mm-plan-badge {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 99px;
+  background: var(--accent-dim); color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.mm-plan-badge.plan-free { background: var(--surface3); color: var(--text3); }
+.mm-plan-badge.plan-team { background: rgba(212,168,84,0.1); color: var(--accent); border: 1px solid rgba(212,168,84,0.2); }
+.mm-member-count { font-size: 12px; color: var(--text3); margin-left: auto; }
+
+/* ── Invite section ───────────────────────────────────── */
+.mm-invite {
+  padding: 16px clamp(20px, 3vw, 28px);
+  border-bottom: 1px solid var(--border);
+}
+.mm-invite-row {
+  display: flex; gap: 8px; align-items: stretch;
+}
+.mm-invite-input {
+  flex: 1; min-width: 0;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 10px 14px;
+  color: var(--text); font-size: 13px; outline: none;
+  font-family: var(--sans);
+  transition: border-color 0.2s;
+}
+.mm-invite-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.mm-invite-input::placeholder { color: var(--text3); }
+.mm-invite-role {
+  width: 130px; flex-shrink: 0;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 10px 32px 10px 12px;
+  color: var(--text); font-size: 13px; outline: none;
+  font-family: var(--sans); cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2388888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.mm-invite-role:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.mm-invite .btn-primary {
+  flex-shrink: 0; padding: 10px 18px;
+  font-size: 13px;
+}
+.mm-invite-limit {
+  font-size: 11px; color: var(--text3); margin-top: 8px;
+}
+/* Disabled state */
+.mm-invite.disabled .mm-invite-input,
+.mm-invite.disabled .mm-invite-role,
+.mm-invite.disabled .btn-primary {
+  opacity: 0.45; pointer-events: none;
+}
+
+/* ── Upgrade banner ────────────────────────────────────── */
+.mm-upgrade-banner {
+  display: flex; align-items: center; gap: 14px;
+  margin: 0 clamp(20px, 3vw, 28px) 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--accent-dim) 0%, rgba(212,168,84,0.05) 100%);
+  border: 1px solid rgba(212,168,84,0.15);
+  border-radius: var(--radius);
+}
+.mm-upgrade-banner p {
+  flex: 1; margin: 0;
+  font-size: 13px; color: var(--text2); line-height: 1.4;
+}
+
+/* ── Members list ──────────────────────────────────────── */
+.mm-list-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px clamp(20px, 3vw, 28px);
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+.mm-col-hdr { flex-shrink: 0; }
+.mm-col-name  { flex: 1; min-width: 0; }
+.mm-col-email { flex: 1.2; min-width: 0; }
+.mm-col-role  { width: 80px; text-align: center; }
+.mm-col-status { width: 100px; text-align: center; }
+.mm-col-actions { width: 60px; text-align: right; }
+
+.mm-list {
+  flex: 1; overflow-y: auto;
+  padding: 4px 0;
+  min-height: 80px;
+}
+
+/* ── Member row ──────────────────────────────────────────── */
+.mm-member-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px clamp(20px, 3vw, 28px);
+  transition: background 0.12s;
+}
+.mm-member-row:hover { background: var(--surface2); }
+.mm-member-row.pending { opacity: 0.65; }
+
+.mm-member-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--accent-dim); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.mm-member-avatar.owner-bg { background: rgba(212,168,84,0.2); color: var(--accent); }
+.mm-member-avatar.admin-bg { background: rgba(212,168,84,0.12); color: var(--accent); }
+
+.mm-member-cell {
+  font-size: 13px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mm-member-cell.muted { color: var(--text3); font-size: 12px; }
+
+.mm-member-name  { flex: 1; min-width: 0; }
+.mm-member-name .mm-member-cell { display: block; }
+.mm-member-name .you-tag {
+  font-size: 10px; color: var(--accent); font-weight: 500;
+  margin-left: 4px;
+}
+.mm-member-email { flex: 1.2; min-width: 0; }
+
+.mm-member-role-cell {
+  width: 80px; text-align: center; flex-shrink: 0;
+}
+.mm-role-badge {
+  display: inline-block;
+  font-size: 11px; font-weight: 500; padding: 2px 10px;
+  border-radius: 99px;
+  background: var(--surface3); color: var(--text2);
+}
+.mm-role-badge.role-owner {
+  background: rgba(212,168,84,0.15); color: var(--accent);
+}
+.mm-role-badge.role-admin {
+  background: rgba(212,168,84,0.08); color: var(--accent);
+}
+
+.mm-member-status {
+  width: 100px; text-align: center; flex-shrink: 0;
+}
+.mm-status-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; padding: 2px 8px; border-radius: 99px;
+}
+.mm-status-badge.active {
+  background: rgba(74, 222, 128, 0.12); color: #4ade80;
+}
+.mm-status-badge.pending {
+  background: rgba(250, 204, 21, 0.12); color: #eab308;
+}
+
+.mm-member-actions {
+  width: 60px; text-align: right; flex-shrink: 0;
+  position: relative;
+}
+.mm-actions-btn {
+  background: none; border: none; color: var(--text3); cursor: pointer;
+  padding: 4px 6px; border-radius: 4px;
+  opacity: 0; transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+.mm-member-row:hover .mm-actions-btn { opacity: 1; }
+.mm-actions-btn:hover { color: var(--text); background: var(--surface3); }
+.mm-actions-btn.open { opacity: 1; color: var(--accent); background: var(--accent-dim); }
+
+/* ── Actions dropdown menu ────────────────────────────── */
+.mm-action-menu {
+  position: absolute; right: 0; top: 100%; z-index: 110;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  min-width: 180px; padding: 4px 0; display: none;
+}
+.mm-action-menu.open { display: block; }
+.mm-action-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; padding: 8px 14px;
+  font-family: var(--sans); font-size: 12px; color: var(--text2);
+  cursor: pointer; transition: background 0.1s, color 0.1s;
+}
+.mm-action-item:hover { background: var(--surface3); color: var(--text); }
+.mm-action-item.danger { color: var(--danger); }
+.mm-action-item.danger:hover { background: rgba(224,122,122,0.1); }
+.mm-action-item + .mm-action-item { border-top: 1px solid var(--border); }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.mm-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 14px clamp(20px, 3vw, 28px);
+  border-top: 1px solid var(--border);
+}
+
+/* ── No members / empty state ─────────────────────────── */
+.mm-empty {
+  text-align: center; padding: 32px 20px;
+  color: var(--text3); font-size: 13px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .manage-members-modal { max-width: 100% !important; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+  .mm-invite-row { flex-direction: column; }
+  .mm-invite-role { width: 100%; }
+  .mm-list-header { display: none; }
+  .mm-member-row { flex-wrap: wrap; gap: 4px 8px; padding: 10px 16px; }
+  .mm-member-avatar { order: 0; }
+  .mm-member-name { order: 1; flex: 1; min-width: 0; }
+  .mm-member-email { order: 3; width: 100%; padding-left: 38px; }
+  .mm-member-role-cell { order: 2; width: auto; }
+  .mm-member-status { order: 4; width: auto; }
+  .mm-member-actions { order: 5; }
+  .mm-footer { flex-direction: column-reverse; }
+  .mm-footer .btn-cancel,
+  .mm-footer .btn-danger-outline { width: 100%; justify-content: center; }
 }
 
