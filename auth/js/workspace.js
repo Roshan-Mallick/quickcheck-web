@@ -22,7 +22,8 @@ async function createWorkspace(name) {
   if (!sb || !currentUser) return null;
 
   const sub = getSubscription();
-  if (workspaces.length >= sub.workspace_limit) {
+  const ownerCount = workspaces.filter(w => w.role === 'owner').length;
+  if (ownerCount >= sub.workspace_limit) {
     let msg = 'Upgrade to Pro to create up to 5 workspaces.';
     if (sub.plan === 'pro') msg = 'Upgrade to Team for unlimited workspaces.';
     showToast(msg, 'error');
@@ -529,18 +530,23 @@ function showCreateWorkspaceModal() {
   const btn = document.getElementById('create-ws-btn');
   const limits = { free: 1, pro: 5, team: Infinity };
   const limit = limits[sub.plan] ?? 1;
-  const remaining = limit - workspaces.length;
+  const ownerCount = workspaces.filter(w => w.role === 'owner').length;
+  const remaining = limit - ownerCount;
 
   if (sub.plan === 'team') {
-    if (limitInfo) limitInfo.textContent = '';
+    if (limitInfo) limitInfo.innerHTML = '';
     if (btn) btn.disabled = false;
   } else if (remaining <= 0) {
-    const upgradeMsg = sub.plan === 'free' ? 'Upgrade to Pro to create up to 5 workspaces.' : 'Upgrade to Team for unlimited workspaces.';
-    if (limitInfo) limitInfo.textContent = upgradeMsg;
+    const msgs = {
+      free: 'Limit reached for Free plan. <a href="/#pricing" style="color:var(--accent);text-decoration:underline">Go to pricing →</a>',
+      pro: 'Limit reached for Pro plan. <a href="/#pricing" style="color:var(--accent);text-decoration:underline">Go to pricing →</a>',
+    };
+    if (limitInfo) { limitInfo.style.color = '#e53e3e'; limitInfo.innerHTML = msgs[sub.plan] || msgs.free; }
     if (btn) btn.disabled = true;
+    showToast(sub.plan === 'free' ? 'Free plan limited to 1 workspace. Upgrade to Pro.' : 'Pro plan limited to 5 workspaces. Upgrade to Team.', 'error');
   } else {
     const limitMsg = sub.plan === 'free' ? 'Free plan allows 1 workspace.' : 'Pro plan allows up to 5 workspaces.';
-    if (limitInfo) limitInfo.textContent = remaining + ' of ' + limit + ' workspaces remaining. ' + limitMsg;
+    if (limitInfo) limitInfo.innerHTML = remaining + ' of ' + limit + ' workspaces remaining. ' + limitMsg;
     if (btn) btn.disabled = false;
   }
 
@@ -561,15 +567,18 @@ function showInviteMemberModal() {
   const btn = document.getElementById('invite-ws-btn');
   const plan = activeWorkspace?.plan || sub.plan;
 
+  const link = '<a href="/#pricing" style="color:var(--accent);text-decoration:underline">View pricing plans →</a>';
+
   if (plan === 'team') {
-    if (limitInfo) limitInfo.textContent = '';
+    if (limitInfo) limitInfo.innerHTML = '';
     if (btn) btn.disabled = false;
   } else if (plan === 'pro') {
     const count = workspaceMembers.filter(m => m.status === 'active').length;
-    if (limitInfo) limitInfo.textContent = count + ' active members. 5 member limit per workspace.';
+    if (limitInfo) limitInfo.innerHTML = count + ' / 5 active members. ' + link;
     if (btn) btn.disabled = count >= 5;
+    if (count >= 5) showToast('Member limit reached. Upgrade to Team for unlimited members.', 'error');
   } else {
-    if (limitInfo) limitInfo.textContent = 'Team collaboration requires Pro or Team plan.';
+    if (limitInfo) limitInfo.innerHTML = 'Team collaboration requires Pro or Team plan. ' + link;
     if (btn) btn.disabled = true;
   }
 
