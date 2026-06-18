@@ -14,7 +14,21 @@ function switchAuthView(view) {
   document.getElementById('auth-tab-login').classList.toggle('active', isLoginFlow);
   document.getElementById('auth-tab-register').classList.toggle('active', view === 'register');
   clearAuthMessages();
+  // Update URL param without reloading
+  const url = new URL(window.location);
+  if (view === 'login') url.searchParams.delete('view');
+  else url.searchParams.set('view', view);
+  history.replaceState(null, '', url);
 }
+
+// On load, respect ?view=register URL param
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const view = params.get('view');
+  if (view && ['login','register','forgot'].includes(view)) {
+    switchAuthView(view);
+  }
+});
 
 // ─── Password field helpers ───────────────────────────────────────────────
 

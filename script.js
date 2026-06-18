@@ -126,55 +126,7 @@
       loop();
     })();
 
-    /* ——— 5. Mobile nav toggle ——— */
-    const toggle = document.querySelector('.nav-toggle');
-    const navLinks = document.querySelector('.nav-links');
-    const navBackdrop = document.querySelector('.nav-backdrop');
-
-    if (toggle && navLinks) {
-      const open = () => {
-        navLinks.classList.add('open');
-        toggle.setAttribute('aria-expanded', 'true');
-        if (navBackdrop) navBackdrop.classList.add('visible');
-        document.body.classList.add('menu-open');
-      };
-
-      const close = () => {
-        navLinks.classList.remove('open');
-        toggle.setAttribute('aria-expanded', 'false');
-        if (navBackdrop) navBackdrop.classList.remove('visible');
-        document.body.classList.remove('menu-open');
-      };
-
-      toggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (navLinks.classList.contains('open')) {
-          close();
-        } else {
-          open();
-        }
-      });
-
-      // Close on Escape
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && navLinks.classList.contains('open')) close();
-      });
-
-      // Close on backdrop click
-      if (navBackdrop) {
-        navBackdrop.addEventListener('click', close);
-      }
-
-      // Close on link click (except mobile CTA uses its own href)
-      navLinks.querySelectorAll('a').forEach(a =>
-        a.addEventListener('click', close)
-      );
-
-      // Set initial aria state
-      toggle.setAttribute('aria-expanded', 'false');
-    }
-
-    /* ——— 6. Mobile accordion footer ——— */
+    /* ——— 5. Mobile accordion footer ——— */
     const accordion = document.querySelector('.fm-accordion');
     if (accordion) {
       accordion.addEventListener('click', (e) => {

@@ -384,25 +384,55 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   color: #D6AE60;
 }
 
-/* CTA button */
+/* CTA button group */
+.nav-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* CTA buttons */
 .nav-cta {
   flex-shrink: 0;
 }
 
-/* Hamburger — hidden on desktop */
-.nav-toggle {
-  display: none;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: .5rem .75rem;
-  border-radius: 12px;
+/* Secondary nav CTA — ghost/outline */
+.nav-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+
+  padding: .7rem 1.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255,255,255,0.12);
   cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
-  min-width: 48px;
-  min-height: 48px;
-  flex-shrink: 0;
+
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  white-space: nowrap;
+
+  transition: transform 180ms ease,
+              background 180ms ease,
+              border-color 180ms ease,
+              color 180ms ease;
+  will-change: transform;
+}
+
+.nav-cta-secondary:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.2);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.nav-cta-secondary:active {
+  transform: translateY(0) scale(.98);
 }
 
 /* ── Premium Button System ─────────────────────────────── */
@@ -2014,11 +2044,6 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   }
 }
 
-/* Body scroll lock */
-body.menu-open {
-  overflow: hidden;
-}
-
 /* ── Responsive: ≤ 900px ─────────────────────────────── */
 @media (max-width: 900px) {
 
@@ -2028,111 +2053,14 @@ body.menu-open {
     gap: var(--space-3);
   }
 
-  /* Backdrop overlay */
-  .nav-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 998;
-    opacity: 0;
-    transition: opacity 200ms ease;
+  /* Hide nav links on mobile; show auth buttons inline */
+  .nav-links { display: none; }
+  .nav-cta-group { display: flex; gap: 0.5rem; }
+  .nav-cta,
+  .nav-cta-secondary {
+    padding: .45rem 1rem;
+    font-size: .8rem;
   }
-
-  .nav-backdrop.visible {
-    display: block;
-    opacity: 1;
-  }
-
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: calc(100% + 8px);
-    left: var(--space-5);
-    right: var(--space-5);
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-    background: var(--glass-spatial);
-    backdrop-filter: blur(var(--glass-spatial-blur));
-    border: var(--glass-spatial-border);
-    border-radius: 20px;
-    box-shadow: var(--shadow-dropdown);
-    padding: 20px 24px;
-    z-index: 999;
-    opacity: 0;
-    transform: translateY(-8px) scale(0.97);
-    transition: opacity 200ms ease, transform 200ms ease;
-    pointer-events: none;
-  }
-
-  .nav-links.open {
-    display: flex;
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-  }
-
-  .nav-links li {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .nav-links a {
-    padding: 14px 16px;
-    font-size: .95rem;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    color: rgba(255,255,255,0.7);
-    font-weight: 500;
-    border-radius: 12px;
-    transition: background 200ms ease, color 200ms ease;
-    gap: 0;
-    position: relative;
-  }
-
-  .nav-links a::after {
-    display: none;
-  }
-
-  .nav-links a:hover,
-  .nav-links a:focus-visible {
-    background: rgba(255,255,255,0.05);
-    color: #FFFFFF;
-  }
-
-  .nav-links-cta {
-    margin-top: 12px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-  }
-
-  .nav-links-cta a {
-    background: linear-gradient(135deg, #c9a86c 0%, #dbb87e 100%);
-    color: #0b0f19;
-    font-weight: 700;
-    justify-content: center;
-    letter-spacing: .02em;
-    padding: 16px 16px;
-    border-radius: 14px;
-    box-shadow: 0 1px 0 rgba(255,255,255,.1) inset, 0 1px 2px rgba(0,0,0,.2);
-    min-height: 52px;
-  }
-
-  .nav-links-cta a:hover,
-  .nav-links-cta a:focus-visible {
-    background: #dbb87e;
-    color: #0b0f19;
-  }
-
-  .nav-toggle {
-    display: block;
-    margin-left: auto;
-  }
-
-  .nav-cta { display: none; }
 
   .hero .container,
   .showcase .container {

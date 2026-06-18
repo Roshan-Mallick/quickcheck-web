@@ -31,16 +31,16 @@
       <img src="assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
       <span class="nav-logo-text">Quickcheck</span>
     </a>
-    <div class="nav-backdrop"></div>
     <ul class="nav-links">
-      <li><a href="index.html#capabilities">Features</a></li>
-      <li><a href="index.html#pricing">Pricing</a></li>
-      <li><a href="pages/docs.html">Docs</a></li>
-      <li><a href="pages/changelog.html">Changelog</a></li>
-      <li class="nav-links-cta"><a href="auth/index.html" class="nav-mobile-cta">Start Free</a></li>
+      <li class="nav-link-item"><a href="index.html#capabilities">Features</a></li>
+      <li class="nav-link-item"><a href="index.html#pricing">Pricing</a></li>
+      <li class="nav-link-item"><a href="pages/docs.html">Docs</a></li>
+      <li class="nav-link-item"><a href="pages/changelog.html">Changelog</a></li>
     </ul>
-    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
-    <a href="auth/index.html" class="nav-cta">Start Free</a>
+    <div class="nav-cta-group">
+      <a href="auth/index.html" class="nav-cta-secondary">Log In</a>
+      <a href="auth/index.html?view=register" class="nav-cta">Sign Up</a>
+    </div>
   </nav>
 
   <!-- Hero -->
@@ -314,7 +314,7 @@
             <li class="pricing-na">Activity history</li>
             <li>Email support</li>
           </ul>
-          <a href="auth/index.html" class="btn-secondary">Get Started</a>
+          <a href="auth/index.html?view=register" class="btn-secondary">Continue with Free</a>
         </div>
 
         <div class="pricing-card glass-card">
@@ -335,7 +335,7 @@
             <li>Shared templates</li>
             <li>Priority support</li>
           </ul>
-          <a href="auth/index.html" class="btn-secondary">Start Free Trial</a>
+          <a href="auth/index.html?view=register" class="btn-secondary">Continue with Pro</a>
         </div>
 
         <div class="pricing-card pricing-featured glass-card">
@@ -357,7 +357,7 @@
             <li>Priority support</li>
             <li>SSO &amp; SAML</li>
           </ul>
-          <a href="auth/index.html" class="btn-primary">Start Free Trial</a>
+          <a href="auth/index.html?view=register" class="btn-primary">Continue with Team</a>
         </div>
       </div>
 
@@ -495,6 +495,20 @@
         <p>Persistent checklists for engineering teams.</p>
       </div>
       <div class="fm-accordion">
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="true">
+            Quick Links
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content is-open">
+            <ul>
+              <li><a href="index.html#capabilities">Features</a></li>
+              <li><a href="index.html#pricing">Pricing</a></li>
+              <li><a href="pages/docs.html">Docs</a></li>
+              <li><a href="pages/changelog.html">Changelog</a></li>
+            </ul>
+          </div>
+        </div>
         <div class="fm-group">
           <button class="fm-trigger" aria-expanded="true">
             Product
