@@ -55,7 +55,21 @@ async function init() {
 
   const { data: { session } } = await sb.auth.getSession();
 
-  if (session?.user) {
+  // Check for workspace invite token in URL
+  const inviteMatch = window.location.pathname.match(/\/auth\/invite\/(.+)/);
+  if (inviteMatch) {
+    const token = inviteMatch[1];
+    window.history.replaceState({}, document.title, '/auth/');
+    if (session?.user) {
+      currentUser = session.user;
+      await processInviteByToken(token);
+      await enterApp();
+    } else {
+      window.pendingInviteToken = token;
+    }
+  }
+
+  if (session?.user && !inviteMatch) {
     currentUser = session.user;
     await enterApp();
   }
@@ -63,6 +77,11 @@ async function init() {
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
+      if (window.pendingInviteToken) {
+        const token = window.pendingInviteToken;
+        window.pendingInviteToken = null;
+        await processInviteByToken(token);
+      }
       await enterApp();
     }
     if (event === 'SIGNED_OUT') {

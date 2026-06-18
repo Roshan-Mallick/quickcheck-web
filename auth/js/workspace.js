@@ -276,6 +276,22 @@ async function declineInvitation(wsId) {
   renderSidebar();
 }
 
+async function processInviteByToken(token) {
+  if (!sb || !currentUser || !token) return;
+  const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { token });
+  if (error) {
+    console.error('Invite token error:', error);
+    showToast(error.message || 'Invalid or expired invite link.', 'error');
+    return;
+  }
+  showToast('You joined the workspace!');
+  await loadWorkspaces();
+  if (wsId) {
+    localStorage.setItem(WS_STORAGE_KEY, wsId);
+    await switchWorkspace(wsId);
+  }
+}
+
 // ─── Activity ────────────────────────────────────────────────────────────
 
 async function loadWorkspaceActivity(wsId) {
@@ -1222,7 +1238,7 @@ async function leaveWorkspace(wsId) {
   closeModal('workspace-settings-modal');
 }
 
-// ─── UI — Delete Workspace from context menu ──────────────────────────
+// ─── UI — Delete Workspace (OTP flow) ────────────────────────────────
 
 function confirmDeleteWorkspace(wsId) {
   closeWorkspaceSettingsMenu();
@@ -1230,8 +1246,109 @@ function confirmDeleteWorkspace(wsId) {
     label: 'Delete workspace',
     title: 'Delete this workspace?',
     message: 'This action cannot be undone.',
-    onConfirm: () => deleteWorkspace(wsId),
+    onConfirm: () => sendWorkspaceDeleteOtp(wsId),
   });
+}
+
+let _pendingWsDeleteId = null;
+
+async function sendWorkspaceDeleteOtp(wsId) {
+  console.log('[ws-delete] sendWorkspaceDeleteOtp called with wsId:', wsId);
+  if (!sb || !currentUser?.email) {
+    console.log('[ws-delete] missing sb or email');
+    return;
+  }
+  _pendingWsDeleteId = wsId;
+  console.log('[ws-delete] _pendingWsDeleteId set to:', wsId);
+
+  try {
+    console.log('[ws-delete] calling signInWithOtp()');
+    const { error } = await sb.auth.signInWithOtp({
+      email: currentUser.email,
+      options: { shouldCreateUser: false },
+    });
+    console.log('[ws-delete] signInWithOtp() returned, error:', error);
+    if (error) throw error;
+
+    document.getElementById('delete-workspace-otp-email').textContent = currentUser.email;
+    document.getElementById('delete-workspace-otp-msg').textContent  = '';
+    document.getElementById('delete-workspace-otp-input').value       = '';
+    document.getElementById('delete-workspace-otp-modal').classList.add('open');
+    console.log('[ws-delete] OTP modal opened');
+
+  } catch (err) {
+    console.log('[ws-delete] signInWithOtp() failed:', err.message || err);
+    _pendingWsDeleteId = null;
+    showToast(err.message || 'Failed to send verification code.', 'error');
+  }
+}
+
+async function handleWorkspaceDeleteOtpSubmit(e) {
+  e.preventDefault();
+  console.log('[ws-delete] submit: _pendingWsDeleteId =', _pendingWsDeleteId);
+  if (!sb || !currentUser?.email || !_pendingWsDeleteId) {
+    console.log('[ws-delete] early return — missing sb/email/pendingId');
+    return;
+  }
+
+  const otp = document.getElementById('delete-workspace-otp-input').value.trim();
+  console.log('[ws-delete] otp length:', otp.length);
+  if (!otp) return;
+
+  const btn = document.getElementById('delete-workspace-otp-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const wsId = _pendingWsDeleteId;
+    const verifyPayload = {
+      email: currentUser.email,
+      token: otp,
+      type: 'email',
+    };
+    console.log('[ws-delete] verifyOtp payload:', JSON.stringify(verifyPayload));
+    console.log('[ws-delete] token raw:', JSON.stringify(otp), 'length:', otp.length, 'chars:', [...otp].map(c => c.charCodeAt(0)));
+
+    const { data: verifyData, error } = await sb.auth.verifyOtp(verifyPayload);
+    console.log('[ws-delete] verifyOtp returned, error:', error);
+    if (error) console.log('[ws-delete] error name:', error.name, 'status:', error.status, 'message:', error.message);
+
+    if (error) throw error;
+
+    if (verifyData?.session) {
+      console.log('[ws-delete] setting new session from verifyOtp');
+      await sb.auth.setSession(verifyData.session);
+    }
+
+    console.log('[ws-delete] OTP verified successfully, calling delete_workspace RPC for ws:', wsId);
+    btn.textContent = 'Deleting workspace…';
+
+    const { error: deleteError } = await sb.rpc('delete_workspace', { ws_id: wsId });
+    console.log('[ws-delete] delete_workspace RPC returned, error:', deleteError);
+
+    if (deleteError) throw deleteError;
+
+    console.log('[ws-delete] workspace deleted successfully, cleaning up UI');
+    _pendingWsDeleteId = null;
+
+    if (activeWorkspace && activeWorkspace.id === wsId) {
+      activeWorkspace = null;
+      localStorage.removeItem(WS_STORAGE_KEY);
+      sharedChecklists = [];
+      await loadChecklists();
+      renderSidebar();
+    }
+    await loadWorkspaces();
+    showToast('Workspace deleted.');
+    closeModal('delete-workspace-otp-modal');
+
+  } catch (err) {
+    console.log('[ws-delete] CATCH block — error:', err.message || err, 'error object:', err);
+    document.getElementById('delete-workspace-otp-msg').textContent =
+      err.message || 'Invalid or expired code.';
+    btn.disabled    = false;
+    btn.textContent = 'Verify & Delete';
+  }
 }
 
 

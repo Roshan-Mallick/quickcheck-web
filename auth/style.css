@@ -1097,7 +1097,17 @@ body {
 /* password section — two buttons side by side */
 .account-password-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-.account-invite-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#delete-otp-form { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
+
+.otp-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 14px; color: var(--text);
+  font-size: 28px; font-weight: 700; letter-spacing: 10px; text-align: center;
+  font-family: var(--mono); outline: none; box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.otp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.otp-input::placeholder { letter-spacing: 10px; font-weight: 400; color: var(--text3); }
 
 /* feedback message inside account modal */
 .account-msg { font-size: 13px; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 14px; display: none; }
@@ -1235,6 +1245,8 @@ body {
 .guidance-note strong { color: var(--text2); }
 
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+
 .btn-cancel {
   padding: 11px 18px; background: transparent; border: 1px solid var(--border2);
   border-radius: var(--radius); color: var(--text2);
@@ -1442,10 +1454,6 @@ body {
   .empty-actions { flex-direction: column; }
   .empty-actions .btn-outline,
   .empty-actions .btn-primary { width: 100%; }
-
-  .account-invite-actions { flex-direction: column; }
-  .account-invite-actions .btn-outline,
-  .account-invite-actions .btn-primary { width: 100%; justify-content: center; }
 
   .account-password-actions { flex-direction: column; }
   .account-password-actions .btn-primary,

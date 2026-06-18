@@ -60,9 +60,6 @@ function showAccountModal() {
   const confirmPasswordInput = document.getElementById('account-confirm-password');
   if (confirmPasswordInput) confirmPasswordInput.value = '';
 
-  const inviteInput = document.getElementById('invite-email-input');
-  if (inviteInput) inviteInput.value = '';
-
   // Mobile header
   const mobileTitle = document.getElementById('account-modal-title-mobile');
   if (mobileTitle) mobileTitle.textContent = name;
@@ -81,7 +78,7 @@ function showAccountModal() {
 }
 
 function showAccountSection(section) {
-  const sections = ['profile', 'email', 'password', 'plan', 'invite', 'danger'];
+  const sections = ['profile', 'email', 'password', 'plan', 'danger'];
 
   // Show only the selected section panel
   sections.forEach(s => {
@@ -212,101 +209,84 @@ async function handleAccountPasswordReset() {
   }
 }
 
-// ─── Invite ───────────────────────────────────────────────────────────────
-
-function copyInviteLink() {
-  const url = window.location.origin + '/auth/';
-  navigator.clipboard.writeText(url).then(() => {
-    showToast('Invite link copied.');
-  }).catch(() => {
-    showToast('Failed to copy link.', 'error');
-  });
-}
-
-async function handleSendInvite(e) {
-  e.preventDefault();
-  const to = document.getElementById('invite-email-input').value.trim();
-  if (!to) { showAccountMsg('Enter an email address to invite.', 'error'); return; }
-
-  const inviteBtn = e.target.querySelector('[type="submit"]');
-  inviteBtn.disabled = true;
-  inviteBtn.textContent = 'Checking…';
-
-  try {
-    // Reuse the same RPC you already have in login
-    const { data: emailExists, error: rpcError } = await sb.rpc('check_email_exists', {
-      input_email: to
-    });
-
-    if (rpcError) {
-      showAccountMsg('Something went wrong. Please try again.', 'error');
-      return;
-    }
-
-    if (emailExists) {
-      showAccountMsg(`${to} already has a Quickcheck account.`, 'error');
-      return;
-    }
-
-    // User doesn't exist — send magic link
-    inviteBtn.textContent = 'Sending…';
-
-    const { error: inviteError } = await sb.auth.signInWithOtp({
-      email: to,
-      options: {
-        emailRedirectTo: window.location.origin,
-        shouldCreateUser: true,
-      }
-    });
-
-    if (inviteError) {
-      showAccountMsg('Failed to send invite: ' + inviteError.message, 'error');
-      return;
-    }
-
-    showAccountMsg(`Invite sent to ${to} — they'll receive a magic link to sign up.`);
-    showToast('Invite sent.');
-    document.getElementById('invite-email-input').value = '';
-
-  } catch (err) {
-    showAccountMsg(err.message || 'Something went wrong.', 'error');
-  } finally {
-    inviteBtn.disabled = false;
-    inviteBtn.textContent = 'Send invite';
-  }
-}
+// ─── Invite (workspace-level only) ────────────────────────────────────────
 // ─── Delete account ───────────────────────────────────────────────────────
 
 async function handleDeleteAccount() {
   if (!sb || !currentUser) return;
 
+  showConfirmModal({
+    label: 'Delete account',
+    title: 'Delete your account?',
+    message: 'This permanently deletes your account and all data. This cannot be undone.',
+    onConfirm: sendDeleteOtp,
+  });
+}
+
+async function sendDeleteOtp() {
+  if (!sb || !currentUser?.email) return;
+
   const btn = document.querySelector('.btn-danger-outline');
   btn.disabled    = true;
-  btn.textContent = 'Sending email…';
+  btn.textContent = 'Sending code…';
 
   try {
-    const { data: { session } } = await sb.auth.getSession();
+    const { error } = await sb.auth.signInWithOtp({
+      email: currentUser.email,
+      options: { shouldCreateUser: false },
+    });
+    if (error) throw error;
 
-    const res = await fetch(
-      SUPABASE_URL + '/functions/v1/delete-account',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      }
-    );
+    document.getElementById('delete-otp-email').textContent = currentUser.email;
+    document.getElementById('delete-otp-msg').textContent  = '';
+    document.getElementById('delete-otp-input').value       = '';
+    document.getElementById('delete-otp-modal').classList.add('open');
 
-    if (!res.ok) throw new Error('Failed to send confirmation email.');
-
-    showAccountMsg('Confirmation email sent. Check your inbox.', 'success');
-    btn.textContent = 'Email sent';
+    btn.textContent = 'Code sent';
 
   } catch (err) {
-    showAccountMsg(err.message || 'Failed to send confirmation email.', 'error');
+    showAccountMsg(err.message || 'Failed to send verification code.', 'error');
     btn.disabled    = false;
     btn.textContent = 'Delete my account';
+  }
+}
+
+async function handleDeleteOtpSubmit(e) {
+  e.preventDefault();
+  if (!sb || !currentUser?.email) return;
+
+  const otp = document.getElementById('delete-otp-input').value.trim();
+  if (!otp || otp.length < 8) return;
+
+  const btn = document.getElementById('delete-otp-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: verifyData, error } = await sb.auth.verifyOtp({
+      email: currentUser.email,
+      token: otp,
+      type: 'email',
+    });
+    if (error) throw error;
+
+    if (verifyData?.session) {
+      await sb.auth.setSession(verifyData.session);
+    }
+
+    btn.textContent = 'Deleting account…';
+
+    const { error: deleteError } = await sb.rpc('delete_my_account');
+    if (deleteError) throw deleteError;
+
+    closeModal('delete-otp-modal');
+    window.location.href = '/account-deleted.html';
+
+  } catch (err) {
+    document.getElementById('delete-otp-msg').textContent =
+      err.message || 'Invalid or expired code.';
+    btn.disabled    = false;
+    btn.textContent = 'Verify & Delete';
   }
 }
 
