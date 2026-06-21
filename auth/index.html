@@ -558,8 +558,12 @@
               <span class="plan-info-value" id="account-plan-members-detail"></span>
             </div>
           </div>
-          <p class="account-hint" id="account-plan-cta-hint">
-            <a href="/#pricing" class="plan-upgrade-link">Compare plans and upgrade →</a>
+          <div class="account-upgrade-actions" id="account-upgrade-actions">
+            <button class="btn-secondary btn-sm" id="upgrade-pro-btn" onclick="showUpgradeModal('pro')">Upgrade to Pro</button>
+            <button class="btn-primary btn-sm" onclick="showUpgradeModal('team')">Upgrade to Team</button>
+          </div>
+          <p class="account-hint" id="account-plan-cta-hint" style="margin-top:8px;">
+            <a href="/#pricing" class="plan-upgrade-link">Compare plans in detail →</a>
           </p>
         </div>
 
@@ -914,6 +918,9 @@
           <button type="button" class="btn-outline" onclick="closeModal('delete-otp-modal')">Cancel</button>
           <button type="submit" class="btn-primary" id="delete-otp-btn" style="background:var(--danger);border-color:var(--danger);">Verify &amp; Delete</button>
         </div>
+        <div style="text-align:center;margin-top:12px">
+          <button type="button" class="btn-link" onclick="resendDeleteOtp()" id="resend-delete-otp-btn" style="font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;text-decoration:underline">Resend code</button>
+        </div>
       </form>
     </div>
   </div>
@@ -942,6 +949,36 @@
           <button type="button" class="btn-outline" onclick="closeModal('delete-workspace-otp-modal')">Cancel</button>
           <button type="submit" class="btn-primary" id="delete-workspace-otp-btn" style="background:var(--danger);border-color:var(--danger);">Verify &amp; Delete</button>
         </div>
+        <div style="text-align:center;margin-top:12px">
+          <button type="button" class="btn-link" onclick="resendWorkspaceDeleteOtp()" id="resend-ws-delete-otp-btn" style="font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;text-decoration:underline">Resend code</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── TEMPORARY: UPGRADE ACCESS-CODE MODAL ────────────────────── -->
+  <!-- TODO: Remove this modal when Stripe integration is complete. -->
+  <div class="modal-overlay" id="upgrade-modal">
+    <div class="modal">
+      <div class="modal-label">Upgrade</div>
+      <h3 class="modal-title" id="upgrade-modal-title">Enter Access Code</h3>
+      <p class="modal-description">
+        Enter your access code to upgrade to <strong id="upgrade-plan-name"></strong>.
+      </p>
+      <form id="upgrade-form" onsubmit="handleUpgradeSubmit(event)">
+        <input
+          type="text"
+          id="upgrade-input"
+          class="otp-input"
+          placeholder="Enter code"
+          autocomplete="off"
+          style="font-size:20px;letter-spacing:4px;text-transform:uppercase;"
+        />
+        <p class="account-msg" id="upgrade-msg"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" onclick="closeModal('upgrade-modal')">Cancel</button>
+          <button type="submit" class="btn-primary" id="upgrade-btn">Upgrade</button>
+        </div>
       </form>
     </div>
   </div>
@@ -969,6 +1006,7 @@
   <script src="js/checklist.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/workspace.js"></script>
+  <script src="js/upgrade.js"></script>
   <script src="js/state.js"></script>
 
 </body>

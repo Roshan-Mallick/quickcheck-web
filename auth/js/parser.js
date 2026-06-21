@@ -51,3 +51,24 @@ function parseMd(text) {
   // Drop sections that ended up with no items
   return sections.filter(s => s.items.length > 0);
 }
+
+/**
+ * Convert a checklist object back to a markdown string.
+ *
+ * @param {{id:string, title:string, data:Array<{id:string, title:string, items:Array<{id:string, label:string, checked:boolean}>}>}} cl
+ * @returns {string} Markdown representation
+ */
+function checklistToMd(cl) {
+  const lines = [];
+  lines.push(`# ${cl.title}`);
+  lines.push('');
+  for (const section of cl.data) {
+    lines.push(`## ${section.title}`);
+    for (const item of section.items) {
+      const checkbox = item.checked ? '[x]' : '[ ]';
+      lines.push(`- ${checkbox} ${item.label}`);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}

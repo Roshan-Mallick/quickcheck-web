@@ -716,6 +716,8 @@ body {
 }
 .btn-primary:hover, .btn-violet:hover { background: var(--accent-hover); box-shadow: 0 2px 12px rgba(201,168,108,0.25); }
 
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+
 /* small icon-only button used in checklist meta bar */
 .btn-icon {
   background: var(--surface2); border: 1px solid var(--border);
@@ -1077,6 +1079,15 @@ body {
 /* account sections — each one is shown/hidden by showAccountSection() */
 .account-section { padding: 22px 0; border-top: 1px solid var(--border); }
 .account-section:first-of-type { border-top: none; padding-top: 0; }
+.account-upgrade-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+#upgrade-pro-btn {
+  background: linear-gradient(135deg, #c9a86c, #e8c97a);
+  border: none;
+  color: #0a0a0a;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
 .account-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
 .account-form { display: flex; flex-direction: column; gap: 12px; }
 .account-field label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
@@ -1356,14 +1367,14 @@ body {
     border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
   }
 
-  /* sidebar nav: hidden on mobile */
+  /* sidebar nav: hidden on mobile - all sections shown stacked */
   .account-modal-sidebar { display: none !important; }
 
   /* body: THIS is the scroll container */
   .account-modal-body {
     display: block !important;
     flex: 1 1 auto !important;
-    min-height: 0 !important;      /* required for flex scroll to work */
+    min-height: 0 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     padding: 24px 20px !important;
@@ -1530,116 +1541,7 @@ body {
 }
 
 
-/* ==========================================================================
-   ACCOUNT MODAL RESPONSIVE FIX
-   ADD AT VERY END OF auth/style.css
-   ========================================================================== */
 
-@media (min-width: 641px) {
-
-  .modal-wide {
-    display: grid;
-    grid-template-columns: 170px 1fr;
-    max-width: 720px;
-    min-height: 520px;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .account-modal-sidebar {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-
-  .account-modal-body {
-    display: block;
-    overflow-y: auto;
-    padding: 32px 36px;
-  }
-
-  .account-modal-header {
-    display: none;
-  }
-}
-
-@media (max-width: 640px) {
-
-  .modal-wide {
-    width: 100%;
-    height: 92vh;
-    max-height: 92vh;
-    border-radius: 18px 18px 0 0;
-    padding: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-.account-modal-sidebar {
-  display: flex !important;
-  flex-direction: column;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  border-right: none;
-  gap: 8px;
-}
-
-.account-modal-sidebar .account-nav-btn {
-  width: 100%;
-}
-
-.account-modal-sidebar-bottom {
-  margin-top: 8px;
-}
-
-  .account-modal-body {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .account-modal-header {
-    flex: 0 0 auto;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  /* THIS becomes the scrollable area */
-  .account-msg,
-  .account-section {
-    flex: 0 0 auto;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-
-  .account-section:last-of-type {
-    padding-bottom: 24px;
-  }
-
-  .account-modal-body {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .account-modal-footer {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 10px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-  }
-
-  .account-modal-footer button {
-    width: 100%;
-    justify-content: center;
-  }
-}
 
 /* ═══════════════════════════════════════════════════════════════
    WORKSPACE UI

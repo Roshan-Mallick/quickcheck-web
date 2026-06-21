@@ -32,7 +32,7 @@
 
     <header class="doc-header">
       <h1>Privacy Policy</h1>
-      <p class="doc-meta">Last updated: June 13, 2026</p>
+      <p class="doc-meta">Last updated: June 21, 2026</p>
     </header>
 
     <div class="doc-section">
@@ -44,6 +44,7 @@
         <li><strong>Checklist content</strong> — the checklists, sections, items, and progress data you create and manage within the application.</li>
       </ul>
       <p>We do not collect payment information directly. Any future payment processing will be handled by a third-party payment processor.</p>
+      <p><strong>Note for rental/tenancy use:</strong> If you use Quickcheck to track tenant information (names, payment history, contact details), you are responsible for obtaining consent from those individuals before entering their data into the Service, as required under applicable data protection laws.</p>
     </div>
 
     <div class="doc-section">
@@ -55,23 +56,35 @@
         <li>Sync your checklist data across devices and sessions.</li>
         <li>Communicate with you about service updates, security notices, and support inquiries.</li>
       </ul>
+      <p>We do not use your personal data for any purpose beyond what is necessary to deliver the Service. Your data is not used for advertising, profiling, training machine learning models, or any automated decision-making.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Legal basis (DPDP Act 2023)</h2>
+      <p>Quickcheck processes your personal data in compliance with the Digital Personal Data Protection Act, 2023 (DPDP Act) of India. Our legal basis for processing is:</p>
+      <ul>
+        <li><strong>Consent:</strong> You provide explicit consent when you create an account and accept these terms. You may withdraw consent at any time by deleting your account.</li>
+        <li><strong>Purpose limitation:</strong> Your data is processed only for the specific, lawful purpose of providing the Service. It is not used for any other purpose without your separate consent.</li>
+      </ul>
+      <p>As a personal project operating at a non-commercial scale, we are not required to register as a Significant Data Fiduciary under the DPDP Act. We voluntarily adhere to its principles of transparency, purpose limitation, and data security.</p>
     </div>
 
     <div class="doc-section">
       <h2>Third-party services</h2>
       <p>Quickcheck uses the following third-party services:</p>
       <ul>
-        <li><strong>Supabase</strong> — provides authentication, database storage, and serverless infrastructure. Your account credentials and checklist data are stored in Supabase's infrastructure.</li>
+        <li><strong>Supabase</strong> — provides authentication, database storage, and serverless infrastructure. Your account credentials and checklist data are stored in Supabase's infrastructure. Supabase is GDPR-compliant and SOC 2 compliant.</li>
         <li><strong>Google Sign-In</strong> — if you choose to sign in with Google, we receive your email address and basic profile information from Google. No additional Google services are accessed.</li>
         <li><strong>GitHub Sign-In</strong> — if you choose to sign in with GitHub, we receive your email address and basic profile information from GitHub. No additional GitHub services are accessed.</li>
       </ul>
-      <p>Each third-party service operates under its own privacy policy. We encourage you to review them.</p>
+      <p>We do not sell, share, or transfer your personal data to any third party for advertising, analytics, or any purpose other than operating the Service. Each third-party service operates under its own privacy policy. We encourage you to review them.</p>
     </div>
 
     <div class="doc-section">
-      <h2>Data retention</h2>
+      <h2>Data retention &amp; deletion</h2>
       <p>We retain your account information and checklist data for as long as your account is active. If you delete your account, all associated data is permanently removed from our systems within 30 days.</p>
       <p>Backup copies may persist in encrypted form for up to 90 days before being fully purged.</p>
+      <p>To delete your account and all associated data, go to your account settings and use the "Delete account" option. You will receive a one-time password via email to confirm the deletion. Once confirmed, all your data is permanently and irreversibly removed.</p>
     </div>
 
     <div class="doc-section">
@@ -81,13 +94,28 @@
         <li>All data transmitted between your browser and our servers is encrypted using HTTPS/TLS.</li>
         <li>Checklist data is stored in a PostgreSQL database with row-level security, ensuring data isolation between accounts.</li>
         <li>Authentication is handled by Supabase Auth, which uses secure session management and encrypted tokens.</li>
+        <li>Passwords are hashed and never stored in plain text.</li>
       </ul>
     </div>
 
     <div class="doc-section">
-      <h2>Your rights</h2>
-      <p>You have the right to access, update, or delete your personal information at any time through your account settings. If you need assistance, please contact us.</p>
-      <p>We do not sell your personal information to third parties. We do not use your checklist data for training machine learning models or for any purpose other than providing the service to you.</p>
+      <h2>Your rights (DPDP Act 2023)</h2>
+      <p>Under the DPDP Act 2023, you have the following rights regarding your personal data:</p>
+      <ul>
+        <li><strong>Right to access:</strong> You may request a copy of all personal data we hold about you.</li>
+        <li><strong>Right to correction:</strong> You may update or correct your personal information through your account settings.</li>
+        <li><strong>Right to erasure (right to be forgotten):</strong> You may delete your account and all associated data at any time through your account settings. This permanently removes your data from active systems.</li>
+        <li><strong>Right to grievance redressal:</strong> If you have any concerns about how your data is handled, please contact us. We will respond within a reasonable timeframe as specified under the DPDP Act.</li>
+      </ul>
+      <p>We do not sell your personal information to third parties. We do not use your data for training machine learning models or for any purpose other than providing the service to you.</p>
+    </div>
+
+    <div class="doc-section">
+      <h2>Grievance officer</h2>
+      <p>In accordance with the DPDP Act 2023 and applicable rules, any concerns or complaints regarding data privacy may be directed to:</p>
+      <p><strong>Roshan Mallick</strong><br>
+      Email: <a href="mailto:roshanmallick2025@gmail.com">roshanmallick2025@gmail.com</a></p>
+      <p>We will acknowledge receipt of any grievance within 24 hours and endeavor to resolve it within 30 days.</p>
     </div>
 
     <div class="doc-section">
@@ -131,7 +159,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+        <p>&copy; 2026 Quickcheck. <a href="../LICENSE">MIT License</a>.</p>
       </div>
     </div>
   </footer>
@@ -186,7 +214,7 @@
         </div>
       </div>
       <div class="fm-bottom">
-        <p>&copy; 2026 Quickcheck. All rights reserved.</p>
+        <p>&copy; 2026 Quickcheck. <a href="../LICENSE">MIT License</a>.</p>
       </div>
     </div>
   </footer>

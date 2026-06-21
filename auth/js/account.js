@@ -79,11 +79,12 @@ function showAccountModal() {
 
 function showAccountSection(section) {
   const sections = ['profile', 'email', 'password', 'plan', 'danger'];
+  const isMobile = window.innerWidth <= 640;
 
-  // Show only the selected section panel
+  // On mobile: show all sections stacked (scrollable). On desktop: show only the selected one.
   sections.forEach(s => {
     const el = document.getElementById('account-sec-' + s);
-    if (el) el.style.display = s === section ? 'block' : 'none';
+    if (el) el.style.display = isMobile ? 'block' : (s === section ? 'block' : 'none');
   });
 
   // Update sidebar nav active state by positional index
@@ -283,11 +284,25 @@ async function handleDeleteOtpSubmit(e) {
     window.location.href = '/account-deleted.html';
 
   } catch (err) {
-    document.getElementById('delete-otp-msg').textContent =
-      err.message || 'Invalid or expired code.';
+    const msgEl = document.getElementById('delete-otp-msg');
+    msgEl.textContent = 'OTP is wrong, enter the correct one.';
+    msgEl.className   = 'account-msg error';
     btn.disabled    = false;
     btn.textContent = 'Verify & Delete';
   }
+}
+
+function resendDeleteOtp() {
+  const btn = document.getElementById('resend-delete-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  sendDeleteOtp().then(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  }).catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  });
 }
 
 // ─── Subscription ─────────────────────────────────────────────────────────

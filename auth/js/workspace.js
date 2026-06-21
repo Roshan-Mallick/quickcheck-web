@@ -13,8 +13,22 @@ async function loadWorkspaces() {
     const still = workspaces.find(w => w.id === activeWorkspace.id);
     if (!still) { activeWorkspace = null; localStorage.removeItem(WS_STORAGE_KEY); }
   }
-  renderWorkspaceSwitcher();
 }
+
+function resendWorkspaceDeleteOtp() {
+  if (!_pendingWsDeleteId) return;
+  const btn = document.getElementById('resend-ws-delete-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  sendWorkspaceDeleteOtp(_pendingWsDeleteId).then(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  }).catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  });
+}
+
 
 async function createWorkspace(name) {
   name = name.trim();
@@ -1344,11 +1358,25 @@ async function handleWorkspaceDeleteOtpSubmit(e) {
 
   } catch (err) {
     console.log('[ws-delete] CATCH block — error:', err.message || err, 'error object:', err);
-    document.getElementById('delete-workspace-otp-msg').textContent =
-      err.message || 'Invalid or expired code.';
+    const msgEl = document.getElementById('delete-workspace-otp-msg');
+    msgEl.textContent = 'OTP is wrong, enter the correct one.';
+    msgEl.className   = 'account-msg error';
     btn.disabled    = false;
     btn.textContent = 'Verify & Delete';
   }
 }
 
+function resendWorkspaceDeleteOtp() {
+  if (!_pendingWsDeleteId) return;
+  const btn = document.getElementById('resend-ws-delete-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  sendWorkspaceDeleteOtp(_pendingWsDeleteId).then(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  }).catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  });
+}
 
