@@ -2,5 +2,8 @@ User-agent: *
 Allow: /
 
 Disallow: /auth/
+Disallow: /*.js$
+Disallow: /*.css$
+Disallow: /LICENSE
 
 Sitemap: https://quickcheck-web.vercel.app/sitemap.xml
