@@ -20,7 +20,7 @@
   <meta name="theme-color" content="#050507">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -46,73 +46,195 @@
   <!-- Hero -->
   <section class="hero reveal" id="hero">
     <div class="container hero-container">
-      <div class="hero-content">
-        <p class="hero-eyebrow">Persistent Checklists</p>
-        <h1 class="hero-headline">The operational system your team actually remembers.</h1>
-        <p class="hero-sub">Build repeatable processes, track progress across sessions, and keep operational knowledge alive long after deployments, incidents, and handoffs.</p>
-        <div class="hero-actions">
-          <a href="auth/index.html" class="btn-primary">Start Free</a>
-          <a href="#showcase" class="btn-secondary">View Demo</a>
-        </div>
+      <div class="hero-text-overlay">
+        <h1 class="hero-overlay-headline">Persistent checklists.</h1>
+        <p class="hero-overlay-sub">Build repeatable processes, track progress across sessions, and keep operational knowledge alive after every deploy, incident, and handoff.</p>
       </div>
+      <div class="hero-visual hero-visual--centered">
+        <div class="dp-preview glass-card">
+          <div class="dp-body">
+            <!-- Sidebar -->
+            <aside class="dp-sidebar">
+              <div class="dp-logo">
+                <img class="dp-logo-img" src="assets/logo.png" alt="Quickcheck">
+                <span class="dp-logo-text">Quickcheck</span>
+              </div>
+              <div class="dp-search">
+                <svg class="dp-search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+                <span class="dp-search-placeholder">Search checklists...</span>
+              </div>
+              <nav class="dp-nav">
+                <a class="dp-nav-item active" href="#">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="4" height="4" rx="1"/><rect x="10" y="2" width="4" height="4" rx="1"/><rect x="2" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/></svg>
+                  Dashboard
+                </a>
+                <a class="dp-nav-item" href="#">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h8v10H4z"/><path d="M6 8h4M6 11h4"/></svg>
+                  Checklists
+                </a>
+                <a class="dp-nav-item" href="#">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M6 10l2-2 2 2"/><path d="M8 6v4"/></svg>
+                  Templates
+                </a>
+                <a class="dp-nav-item" href="#">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/></svg>
+                  Team
+                </a>
+                <a class="dp-nav-item" href="#">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
+                  Activity
+                </a>
+              </nav>
+              <div class="dp-workspace">
+                <div class="dp-ws-label">WORKSPACE</div>
+                <div class="dp-ws-name">engineering-team</div>
+              </div>
+            </aside>
 
-      <div class="hero-visual">
-        <div class="hero-window glass-card">
-          <div class="hero-window-bar">
-            <span class="dot dot-red"></span>
-            <span class="dot dot-yellow"></span>
-            <span class="dot dot-green"></span>
-            <span class="hero-window-title">deploy-checklist.md — Quickcheck</span>
-          </div>
-          <div class="hero-window-content">
-            <div class="hero-progress-row">
-              <span class="hero-progress-label">Overall Progress</span>
-              <span class="hero-progress-text">12/16</span>
-            </div>
-            <div class="hero-progress-bar">
-              <div class="hero-progress-fill" style="width: 75%"></div>
-            </div>
+            <!-- Main Content -->
+            <div class="dp-main">
+              <!-- Top Bar -->
+              <div class="dp-topbar">
+                <div class="dp-topbar-left">
+                  <h3 class="dp-topbar-title">Production Deploy</h3>
+                  <span class="dp-topbar-badge">In Progress</span>
+                </div>
+                <div class="dp-topbar-right">
+                  <button class="dp-notif-btn">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a4 4 0 0 0-4 4v3l-1 2h10l-1-2V6a4 4 0 0 0-4-4z"/><path d="M6 12a2 2 0 0 0 4 0"/></svg>
+                  </button>
+                  <div class="dp-avatar">R</div>
+                  <button class="dp-new-btn">+ New</button>
+                </div>
+              </div>
 
-            <div class="hero-section-group">
-              <h4 class="hero-section-title">PRE-DEPLOY</h4>
-              <div class="hero-checklist">
-                <label class="hero-item checked">
-                  <span class="hero-checkbox">✓</span>
-                  Run database migration scripts
-                </label>
-                <label class="hero-item checked">
-                  <span class="hero-checkbox">✓</span>
-                  Verify staging environment passes smoke tests
-                </label>
-                <label class="hero-item checked">
-                  <span class="hero-checkbox">✓</span>
-                  Notify on-call engineer of deploy window
-                </label>
-                <label class="hero-item">
-                  <span class="hero-checkbox"></span>
-                  Update feature flags in LaunchDarkly
-                </label>
+              <!-- Stats Row -->
+              <div class="dp-stats">
+                <div class="dp-stat">
+                  <span class="dp-stat-value">24</span>
+                  <span class="dp-stat-label">Active</span>
+                </div>
+                <div class="dp-stat">
+                  <span class="dp-stat-value">156</span>
+                  <span class="dp-stat-label">Completed</span>
+                </div>
+                <div class="dp-stat">
+                  <span class="dp-stat-value">12</span>
+                  <span class="dp-stat-label">Members</span>
+                </div>
+                <div class="dp-stat">
+                  <span class="dp-stat-value">98.7%</span>
+                  <span class="dp-stat-label">Success</span>
+                </div>
+              </div>
+
+              <!-- Content Row -->
+              <div class="dp-content-row">
+                <!-- Checklist List + Detail -->
+                <div class="dp-checklists">
+                  <div class="dp-cl-list">
+                    <div class="dp-cl-header">Recent Checklists</div>
+                    <div class="dp-cl-item active">
+                      <div class="dp-cl-item-left">
+                        <span class="dp-cl-dot"></span>
+                        <span>Production Deployment</span>
+                      </div>
+                      <span class="dp-cl-progress">18/24</span>
+                    </div>
+                    <div class="dp-cl-item">
+                      <div class="dp-cl-item-left">
+                        <span class="dp-cl-dot"></span>
+                        <span>Incident Response</span>
+                      </div>
+                      <span class="dp-cl-progress">8/12</span>
+                    </div>
+                    <div class="dp-cl-item">
+                      <div class="dp-cl-item-left">
+                        <span class="dp-cl-dot"></span>
+                        <span>Security Audit</span>
+                      </div>
+                      <span class="dp-cl-progress">22/30</span>
+                    </div>
+                  </div>
+
+                  <div class="dp-cl-detail">
+                    <div class="dp-cl-detail-header">
+                      <span class="dp-cl-detail-title">Production Deployment</span>
+                      <span class="dp-cl-detail-count">18 / 24</span>
+                    </div>
+                    <div class="dp-cl-detail-bar-wrap">
+                      <div class="dp-cl-detail-bar">
+                        <div class="dp-cl-detail-fill" style="width: 75%"></div>
+                      </div>
+                      <span class="dp-cl-detail-pct">75%</span>
+                    </div>
+                    <div class="dp-cl-items">
+                      <div class="dp-cl-row checked">
+                        <span class="dp-cl-check">✓</span>
+                        Pre-deployment backup
+                      </div>
+                      <div class="dp-cl-row checked">
+                        <span class="dp-cl-check">✓</span>
+                        Database migration verified
+                      </div>
+                      <div class="dp-cl-row checked">
+                        <span class="dp-cl-check">✓</span>
+                        Environment variables checked
+                      </div>
+                      <div class="dp-cl-row checked">
+                        <span class="dp-cl-check">✓</span>
+                        Health checks passed
+                      </div>
+                      <div class="dp-cl-row">
+                        <span class="dp-cl-check"></span>
+                        Traffic switched
+                      </div>
+                      <div class="dp-cl-row">
+                        <span class="dp-cl-check"></span>
+                        Monitoring validated
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Activity Panel -->
+                <div class="dp-activity">
+                  <div class="dp-activity-header">Activity</div>
+                  <div class="dp-activity-feed">
+                    <div class="dp-activity-item">
+                      <div class="dp-activity-avatar" style="background:#6daf82">M</div>
+                      <div class="dp-activity-text">
+                        <strong>Maria</strong> checked "Database migration"
+                        <span class="dp-activity-time">2m ago</span>
+                      </div>
+                    </div>
+                    <div class="dp-activity-item">
+                      <div class="dp-activity-avatar" style="background:#c9a227">J</div>
+                      <div class="dp-activity-text">
+                        <strong>James</strong> completed smoke tests
+                        <span class="dp-activity-time">8m ago</span>
+                      </div>
+                    </div>
+                    <div class="dp-activity-item">
+                      <div class="dp-activity-avatar" style="background:#6daf82">S</div>
+                      <div class="dp-activity-text">
+                        <strong>Sarah</strong> added 3 items
+                        <span class="dp-activity-time">15m ago</span>
+                      </div>
+                    </div>
+                    <div class="dp-activity-item">
+                      <div class="dp-activity-avatar" style="background:#e07a7a">T</div>
+                      <div class="dp-activity-text">
+                        <strong>Tom</strong> started deployment
+                        <span class="dp-activity-time">1h ago</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <div class="hero-section-group">
-              <h4 class="hero-section-title">DEPLOY</h4>
-              <div class="hero-checklist">
-                <label class="hero-item checked">
-                  <span class="hero-checkbox">✓</span>
-                  Execute rolling deploy to production
-                </label>
-                <label class="hero-item checked">
-                  <span class="hero-checkbox">✓</span>
-                  Monitor error rate dashboard for 15 min
-                </label>
-                <label class="hero-item">
-                  <span class="hero-checkbox"></span>
-                  Run integration test suite against prod
-                </label>
-              </div>
-            </div>
           </div>
+          <div class="dp-glow"></div>
         </div>
       </div>
     </div>
@@ -199,79 +321,71 @@
   <section class="capabilities section-padding reveal" id="capabilities">
     <div class="container">
       <div class="section-header">
-        <p class="capabilities-eyebrow">Capabilities</p>
+        <p class="eyebrow">Capabilities</p>
         <h2 class="section-heading">Built for operational excellence</h2>
         <p class="section-sub">Everything your team needs to build, track, and improve operational processes.</p>
       </div>
 
       <div class="capabilities-grid">
         <article class="capability-card glass-card">
-          <div class="capability-icon">
-            <img src="assets/sync.png" alt="" loading="lazy">
+          <div class="capability-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 2.1l4 4-4 4M21 6.1H7a4 4 0 0 0-4 4v1M7 21.9l-4-4 4-4M3 17.9h14a4 4 0 0 0 4-4v-1"/></svg>
           </div>
-          <h3 class="capability-title">Instant Sync</h3>
+          <h3 class="capability-title">Instant sync</h3>
           <p class="capability-desc">Changes persist immediately to the cloud. No save buttons, no lost progress. Your checklists are always current.</p>
         </article>
 
         <article class="capability-card glass-card">
-          <div class="capability-icon">
-            <img src="assets/md.png" alt="" loading="lazy">
+          <div class="capability-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3 3 3-3"/></svg>
           </div>
-          <h3 class="capability-title">Markdown Import</h3>
+          <h3 class="capability-title">Markdown import</h3>
           <p class="capability-desc">Import existing runbooks and procedures directly from .md files. Your team's knowledge, structured automatically.</p>
         </article>
 
         <article class="capability-card glass-card">
-          <div class="capability-icon">
-            <img src="assets/secure.png" alt="" loading="lazy">
+          <div class="capability-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
           </div>
-          <h3 class="capability-title">Secure by Default</h3>
+          <h3 class="capability-title">Secure by default</h3>
           <p class="capability-desc">Row-level security ensures complete data isolation. Every checklist belongs to its owner, enforced at the database level.</p>
         </article>
       </div>
     </div>
   </section>
 
-  <!-- How It Works / Workflow -->
+  <!-- Workflow -->
   <section class="workflow section-padding reveal" id="workflow">
     <div class="container">
       <div class="section-header">
-        <p class="workflow-eyebrow">How it works</p>
+        <p class="eyebrow">How it works</p>
         <h2 class="section-heading">From runbook to repeatable process</h2>
         <p class="section-sub">Four steps to turn operational knowledge into a reliable, repeatable system.</p>
       </div>
 
       <div class="workflow-timeline">
-        <div class="workflow-step glass-card">
+        <div class="workflow-step">
           <div class="workflow-dot">1</div>
-          <div class="workflow-step-content">
-            <h3 class="workflow-step-title">Import</h3>
-            <p class="workflow-step-desc">Paste your existing markdown runbook or create a fresh checklist from scratch.</p>
-          </div>
+          <h3 class="workflow-step-title">Import</h3>
+          <p class="workflow-step-desc">Paste your existing markdown runbook or create a fresh checklist from scratch.</p>
         </div>
 
-        <div class="workflow-step glass-card">
+        <div class="workflow-step">
           <div class="workflow-dot">2</div>
-          <div class="workflow-step-content">
-            <h3 class="workflow-step-title">Structure</h3>
-            <p class="workflow-step-desc">Organize tasks into sections. Add items, reorder, and refine your process.</p>
-          </div>
+          <h3 class="workflow-step-title">Structure</h3>
+          <p class="workflow-step-desc">Organize tasks into sections. Add items, reorder, and refine your process.</p>
         </div>
 
-        <div class="workflow-step glass-card">
+        <div class="workflow-step">
           <div class="workflow-dot">3</div>
-          <div class="workflow-step-content">
-            <h3 class="workflow-step-title">Execute</h3>
-            <p class="workflow-step-desc">Work through your checklist. Progress saves automatically. Pick up where you left off.</p>
-          </div>
+          <h3 class="workflow-step-title">Execute</h3>
+          <p class="workflow-step-desc">Work through your checklist. Progress saves automatically. Pick up where you left off.</p>
         </div>
 
-        <div class="workflow-step glass-card">
+        <div class="workflow-step">
           <div class="workflow-dot">4</div>
-          <div class="workflow-step-content">
-            <h3 class="workflow-step-title">Iterate</h3>
-            <p class="workflow-step-desc">After each cycle, improve your checklist. Operational knowledge compounds over time.</p>
-          </div>
+          <h3 class="workflow-step-title">Iterate</h3>
+          <p class="workflow-step-desc">After each cycle, improve your checklist. Operational knowledge compounds over time.</p>
         </div>
       </div>
     </div>
@@ -291,7 +405,6 @@
   <section class="pricing section-padding reveal" id="pricing">
     <div class="container">
       <div class="section-header">
-        <p class="pricing-eyebrow">Pricing</p>
         <h2 class="section-heading">Simple, transparent pricing</h2>
         <p class="section-sub">Start free. Upgrade when you need more power.</p>
       </div>
@@ -317,7 +430,8 @@
           <a href="auth/index.html?view=register" class="btn-secondary">Continue with Free</a>
         </div>
 
-        <div class="pricing-card glass-card">
+        <div class="pricing-card pricing-featured glass-card">
+          <div class="pricing-badge">Popular</div>
           <h3 class="pricing-title">Pro</h3>
           <div class="pricing-price">
             <span class="pricing-amount">$8</span>
@@ -338,8 +452,7 @@
           <a href="auth/index.html?upgrade=pro" class="btn-primary">Continue with Pro</a>
         </div>
 
-        <div class="pricing-card pricing-featured glass-card">
-          <div class="pricing-badge">Popular</div>
+        <div class="pricing-card glass-card">
           <h3 class="pricing-title">Team</h3>
           <div class="pricing-price">
             <span class="pricing-amount">$12</span>
@@ -357,7 +470,7 @@
             <li>Priority support</li>
             <li>SSO &amp; SAML</li>
           </ul>
-          <a href="auth/index.html?upgrade=team" class="btn-primary">Continue with Team</a>
+          <a href="auth/index.html?upgrade=team" class="btn-secondary">Continue with Team</a>
         </div>
       </div>
 
@@ -389,8 +502,8 @@
               <tr>
                 <td>Team collaboration</td>
                 <td><span class="cmp-no">—</span></td>
-                <td class="col-highlight cmp-yes">&#10003;</td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="col-highlight cmp-yes">✓</td>
+                <td class="cmp-yes">✓</td>
               </tr>
               <tr>
                 <td>Workspace members</td>
@@ -401,32 +514,32 @@
               <tr>
                 <td>Activity history</td>
                 <td><span class="cmp-no">—</span></td>
-                <td class="col-highlight cmp-yes">&#10003;</td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="col-highlight cmp-yes">✓</td>
+                <td class="cmp-yes">✓</td>
               </tr>
               <tr>
                 <td>Markdown import/export</td>
-                <td class="cmp-yes">&#10003;</td>
-                <td class="col-highlight cmp-yes">&#10003;</td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="cmp-yes">✓</td>
+                <td class="col-highlight cmp-yes">✓</td>
+                <td class="cmp-yes">✓</td>
               </tr>
               <tr>
                 <td>Shared templates</td>
                 <td><span class="cmp-no">—</span></td>
-                <td class="col-highlight cmp-yes">&#10003;</td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="col-highlight cmp-yes">✓</td>
+                <td class="cmp-yes">✓</td>
               </tr>
               <tr>
                 <td>Priority support</td>
                 <td><span class="cmp-no">—</span></td>
-                <td class="col-highlight cmp-yes">&#10003;</td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="col-highlight cmp-yes">✓</td>
+                <td class="cmp-yes">✓</td>
               </tr>
               <tr>
                 <td>SSO &amp; SAML</td>
                 <td><span class="cmp-no">—</span></td>
                 <td class="col-highlight"><span class="cmp-no">—</span></td>
-                <td class="cmp-yes">&#10003;</td>
+                <td class="cmp-yes">✓</td>
               </tr>
             </tbody>
           </table>
