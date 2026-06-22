@@ -243,9 +243,15 @@ function closeSidebar() {
   document.getElementById('sidebar-backdrop').classList.remove('open');
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────
+// ─── Dashboard / Empty state ───────────────────────────────────────────────
 
-function showEmptyState() {
-  document.getElementById('empty-state').style.display    = 'flex';
-  document.getElementById('checklist-view').style.display = 'none';
+function showDashboard() {
+  document.getElementById('dashboard-view').style.display  = '';
+  document.getElementById('checklist-view').style.display  = 'none';
+  renderDashboardList();
+  renderDashboardStats();
+  renderDashboardActivity();
 }
+
+// Keep old alias so nothing breaks
+function showEmptyState() { showDashboard(); }

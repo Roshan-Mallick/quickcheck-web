@@ -84,10 +84,12 @@ function renderSidebar() {
 
 function loadChecklist(id) {
   activeId = id;
+  dashListCleared = false;
   const source = activeWorkspace ? sharedChecklists : checklists;
   const cl = source.find(c => c.id === id) || checklists.find(c => c.id === id);
-  if (!cl) { if (DEV) console.log('[checklist] loadChecklist not found:', id); showEmptyState(); return; }
+  if (!cl) { if (DEV) console.log('[checklist] loadChecklist not found:', id); showDashboard(); return; }
   if (DEV) console.log('[checklist] loadChecklist:', id, cl.title);
+  showDashboard();
   renderChecklist(cl);
   renderSidebar();
   closeSidebar();
@@ -104,14 +106,13 @@ const ICON_CLOSE    = `<svg width="12" height="12" viewBox="0 0 24 24" fill="non
 const ICON_DOWNLOAD = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 
 function renderChecklist(cl) {
-  const checklist  = document.getElementById('checklist-view');
-  const emptyState = document.getElementById('empty-state');
+  const detail = document.getElementById('dash-cl-detail');
 
   const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
   const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
   const pct     = total ? Math.round(checked / total * 100) : 0;
 
-  checklist.innerHTML = `
+  detail.innerHTML = `
     <div class="checklist-meta">
       <div class="progress-bar"><div class="progress-bar-fill" style="width: ${pct}%"></div></div>
       <div class="meta-content">
@@ -129,16 +130,15 @@ function renderChecklist(cl) {
           <button class="btn-icon" title="Reset all" onclick="resetAll()">${ICON_RESET}</button>
           <button class="btn-icon danger" title="Delete checklist" onclick="confirmDelete('${esc(cl.id)}')">${ICON_TRASH}</button>
         </div>
-        <div class="meta-pill">${checked} / ${total} done</div>
+        <div class="meta-pill" id="dash-meta-pill">${checked} / ${total} done</div>
       </div>
     </div>
     <div class="sections-container" id="sections"></div>
   `;
 
-  emptyState.style.display  = 'none';
-  checklist.style.display   = 'block';
-
   renderSections(cl);
+  renderDashboardList();
+  renderDashboardStats();
 }
 
 function renderSections(cl) {
@@ -173,6 +173,135 @@ function renderSections(cl) {
       itemsDiv.appendChild(createItemRow(cl, si, ii));
     }
   }
+}
+
+// ─── Dashboard rendering ───────────────────────────────────────────────────
+
+let dashListCleared = false;
+
+function clearDashboardList() {
+  dashListCleared = true;
+  renderDashboardList();
+  renderDashboardStats();
+  document.getElementById('dash-cl-detail').innerHTML = '<div class="dash-cl-placeholder">Select a checklist to view details</div>';
+}
+
+function renderDashboardList() {
+  const container = document.getElementById('dash-cl-items');
+  if (!container) return;
+  const source = activeWorkspace ? sharedChecklists : checklists;
+
+  if (dashListCleared) {
+    container.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">No recent checklists</div>';
+    document.getElementById('dash-cl-clear').textContent = 'Show all';
+    document.getElementById('dash-cl-clear').onclick = () => { dashListCleared = false; renderDashboardList(); renderDashboardStats(); };
+    return;
+  }
+
+  container.innerHTML = '';
+  if (!source.length) {
+    container.innerHTML = '<p style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">No checklists yet.</p>';
+    return;
+  }
+
+  // LIFO — render newest first (source is already ordered by created_at desc)
+  for (const cl of source) {
+    const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
+    const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+    const item = document.createElement('div');
+    item.className = 'dash-cl-item' + (cl.id === activeId ? ' active' : '') + (total && checked === total ? ' completed' : '') + (!total ? ' empty' : '');
+    item.innerHTML = `
+      <div class="dash-cl-item-left">
+        <span class="dash-cl-dot"></span>
+        <span>${esc(cl.title)}</span>
+      </div>
+      <span class="dash-cl-progress">${checked}/${total}</span>
+    `;
+    item.onclick = () => loadChecklist(cl.id);
+    container.appendChild(item);
+  }
+  document.getElementById('dash-cl-clear').textContent = 'Clear';
+  document.getElementById('dash-cl-clear').onclick = clearDashboardList;
+}
+
+function renderDashboardStats() {
+  const source = activeWorkspace ? sharedChecklists : checklists;
+  let active = 0, completed = 0, totalChecked = 0, totalItems = 0;
+  for (const cl of source) {
+    const tc = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+    const ti = cl.data.reduce((n, s) => n + s.items.length, 0);
+    totalChecked += tc;
+    totalItems   += ti;
+    if (ti > 0 && tc === ti) completed++;
+    else if (ti > 0 && tc > 0) active++;
+  }
+  document.getElementById('ds-active').textContent    = active;
+  document.getElementById('ds-completed').textContent  = completed;
+  document.getElementById('ds-members').textContent    = activeWorkspace && workspaceMembers.length ? workspaceMembers.length : 1;
+  document.getElementById('ds-success').textContent    = totalItems ? Math.round(totalChecked / totalItems * 100) + '%' : '—';
+
+  const title = document.getElementById('dash-title');
+  const badge = document.getElementById('dash-badge');
+  if (source.length === 0) {
+    title.textContent = 'Dashboard';
+    badge.className = 'dash-badge';
+    return;
+  }
+  const cl = source.find(c => c.id === activeId);
+  if (cl) {
+    title.textContent = cl.title;
+    const tc = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+    const ti = cl.data.reduce((n, s) => n + s.items.length, 0);
+    if (ti > 0 && tc === ti) {
+      badge.textContent = 'Complete';
+      badge.className = 'dash-badge visible';
+      badge.style.color = 'var(--green)';
+      badge.style.background = 'var(--green-dim)';
+    } else if (ti > 0 && tc > 0) {
+      badge.textContent = 'In Progress';
+      badge.className = 'dash-badge visible';
+      badge.style.color = 'var(--accent)';
+      badge.style.background = 'var(--accent-dim)';
+    } else {
+      badge.className = 'dash-badge';
+    }
+  } else {
+    title.textContent = 'Dashboard';
+    badge.className = 'dash-badge';
+  }
+}
+
+function renderDashboardActivity() {
+  const feed = document.getElementById('dash-activity-feed');
+  if (!feed) return;
+  if (workspaceActivity && workspaceActivity.length) {
+    const recent = workspaceActivity.slice(-20).reverse();
+    feed.innerHTML = recent.map(a => {
+      const initial = (a.user_name || '?')[0].toUpperCase();
+      const hue = a.user_id ? parseInt(a.user_id.charCodeAt(0) * 37, 10) % 360 : 200;
+      return `<div class="dash-activity-item">
+        <div class="dash-activity-avatar" style="background:hsl(${hue},50%,50%)">${initial}</div>
+        <div class="dash-activity-text">
+          <strong>${esc(a.user_name || 'Someone')}</strong> ${esc(a.action || 'did something')}
+          <span class="dash-activity-time">${timeAgo(a.created_at)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    feed.innerHTML = '<div class="dash-activity-empty">Activity tracking will appear here as your team works.</div>';
+  }
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  return days + 'd ago';
 }
 
 function createItemRow(cl, si, ii) {
@@ -240,10 +369,12 @@ function updateHeader(cl) {
   const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
   const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
   const pct     = total ? Math.round(checked / total * 100) : 0;
-  const pill    = document.querySelector('.checklist-meta .meta-pill');
+  const pill    = document.getElementById('dash-meta-pill') || document.querySelector('.checklist-meta .meta-pill');
   const fill    = document.querySelector('.progress-bar-fill');
   if (pill) pill.textContent  = `${checked} / ${total} done`;
   if (fill) fill.style.width  = pct + '%';
+  renderDashboardStats();
+  renderDashboardList();
 }
 
 // ─── Inline title editing ─────────────────────────────────────────────────

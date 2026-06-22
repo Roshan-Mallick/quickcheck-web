@@ -295,31 +295,52 @@
 
       <!-- Main -->
       <main class="main" id="main-content">
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-            </svg>
+
+        <!-- ─── Dashboard Layout ──────────────────────────────────────── -->
+        <div id="dashboard-view">
+          <!-- Top bar -->
+          <div class="dash-topbar">
+            <div class="dash-topbar-left">
+              <h3 class="dash-title" id="dash-title">Dashboard</h3>
+              <span class="dash-badge" id="dash-badge"></span>
+            </div>
+            <div class="dash-topbar-right">
+              <button class="dash-notif-btn" onclick="closeSidebar(); document.getElementById('sidebar-toggle').click();" title="Activity" style="display:none">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a4 4 0 0 0-4 4v3l-1 2h10l-1-2V6a4 4 0 0 0-4-4z"/><path d="M6 12a2 2 0 0 0 4 0"/></svg>
+              </button>
+              <button class="btn-primary btn-sm" onclick="showNewListModal()" style="padding:7px 14px;font-size:13px">+ New</button>
+            </div>
           </div>
-          <div class="empty-label">Dashboard</div>
-          <div class="empty-title">No checklist selected</div>
-          <div class="empty-sub">Create a new checklist from scratch or upload a Markdown template to get started.</div>
-          <div class="empty-actions">
-            <button class="btn-outline" onclick="showUploadModal()">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M8 2v8M5 5l3-3 3 3"/>
-              </svg>
-              Upload .md template
-            </button>
-            <button class="btn-primary" onclick="createBlankChecklist()">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
-                <line x1="8" y1="2" x2="8" y2="14"/>
-                <line x1="2" y1="8" x2="14" y2="8"/>
-              </svg>
-              Blank checklist
-            </button>
+
+          <!-- Stats row -->
+          <div class="dash-stats" id="dash-stats">
+            <div class="dash-stat"><span class="ds-value" id="ds-active">0</span><span class="ds-label">Active</span></div>
+            <div class="dash-stat"><span class="ds-value" id="ds-completed">0</span><span class="ds-label">Completed</span></div>
+            <div class="dash-stat"><span class="ds-value" id="ds-members">1</span><span class="ds-label">Members</span></div>
+            <div class="dash-stat"><span class="ds-value" id="ds-success">—</span><span class="ds-label">Success</span></div>
+          </div>
+
+          <!-- Content row -->
+          <div class="dash-content-row">
+            <div class="dash-checklists">
+              <div class="dash-cl-list">
+                <div class="dash-cl-header">
+                  <span>Recent Checklists</span>
+                  <button class="dash-cl-clear" id="dash-cl-clear" onclick="clearDashboardList()">Clear</button>
+                </div>
+                <div id="dash-cl-items"></div>
+              </div>
+              <div class="dash-cl-detail" id="dash-cl-detail">
+                <div class="dash-cl-placeholder">Select a checklist to view details</div>
+              </div>
+            </div>
+            <div class="dash-activity">
+              <div class="dash-activity-header">Activity</div>
+              <div class="dash-activity-feed" id="dash-activity-feed"></div>
+            </div>
           </div>
         </div>
+
         <div id="checklist-view" class="checklist-view" style="display:none;"></div>
       </main>
 

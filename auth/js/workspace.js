@@ -106,7 +106,7 @@ async function switchWorkspace(wsId) {
   ]);
   subscribeWorkspaceRealtime(wsId);
   renderSidebar();
-  if (!sharedChecklists.length) showEmptyState();
+  if (!sharedChecklists.length) showDashboard();
   document.querySelectorAll('.workspace-switcher-item').forEach(el => {
     el.classList.toggle('active', el.dataset.ws === wsId);
   });

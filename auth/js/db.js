@@ -20,6 +20,7 @@ async function loadChecklists() {
     .map(r => ({ id: r.id, title: r.title, data: r.data }));
   if (DEV) console.log('[db] loaded personal checklists:', checklists.length);
   renderSidebar();
+  showDashboard();
 }
 
 async function persistChecklist(cl) {
