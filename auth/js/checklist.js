@@ -240,16 +240,10 @@ function renderDashboardStats() {
   document.getElementById('ds-members').textContent    = activeWorkspace && workspaceMembers.length ? workspaceMembers.length : 1;
   document.getElementById('ds-success').textContent    = totalItems ? Math.round(totalChecked / totalItems * 100) + '%' : '—';
 
-  const title = document.getElementById('dash-title');
+  document.getElementById('dash-title').textContent = 'Dashboard';
   const badge = document.getElementById('dash-badge');
-  if (source.length === 0) {
-    title.textContent = 'Dashboard';
-    badge.className = 'dash-badge';
-    return;
-  }
   const cl = source.find(c => c.id === activeId);
   if (cl) {
-    title.textContent = cl.title;
     const tc = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
     const ti = cl.data.reduce((n, s) => n + s.items.length, 0);
     if (ti > 0 && tc === ti) {
@@ -266,7 +260,6 @@ function renderDashboardStats() {
       badge.className = 'dash-badge';
     }
   } else {
-    title.textContent = 'Dashboard';
     badge.className = 'dash-badge';
   }
 }
