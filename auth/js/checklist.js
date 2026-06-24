@@ -89,6 +89,15 @@ function loadChecklist(id) {
   const cl = source.find(c => c.id === id) || checklists.find(c => c.id === id);
   if (!cl) { if (DEV) console.log('[checklist] loadChecklist not found:', id); showDashboard(); return; }
   if (DEV) console.log('[checklist] loadChecklist:', id, cl.title);
+
+  // Track visit in universal list
+  const idx = visitedChecklists.findIndex(v => v.id === id);
+  const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
+  const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+  const entry = { id, title: cl.title, total, checked, lastVisitedAt: Date.now() };
+  if (idx !== -1) visitedChecklists.splice(idx, 1);
+  visitedChecklists.unshift(entry);
+
   showDashboard();
   renderChecklist(cl);
   renderSidebar();
@@ -189,7 +198,6 @@ function clearDashboardList() {
 function renderDashboardList() {
   const container = document.getElementById('dash-cl-items');
   if (!container) return;
-  const source = activeWorkspace ? sharedChecklists : checklists;
 
   if (dashListCleared) {
     container.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">No recent checklists</div>';
@@ -199,25 +207,22 @@ function renderDashboardList() {
   }
 
   container.innerHTML = '';
-  if (!source.length) {
+  if (!visitedChecklists.length) {
     container.innerHTML = '<p style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">No checklists yet.</p>';
     return;
   }
 
-  // LIFO — render newest first (source is already ordered by created_at desc)
-  for (const cl of source) {
-    const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
-    const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+  for (const v of visitedChecklists) {
     const item = document.createElement('div');
-    item.className = 'dash-cl-item' + (cl.id === activeId ? ' active' : '') + (total && checked === total ? ' completed' : '') + (!total ? ' empty' : '');
+    item.className = 'dash-cl-item' + (v.id === activeId ? ' active' : '') + (v.total && v.checked === v.total ? ' completed' : '') + (!v.total ? ' empty' : '');
     item.innerHTML = `
       <div class="dash-cl-item-left">
         <span class="dash-cl-dot"></span>
-        <span>${esc(cl.title)}</span>
+        <span>${esc(v.title)}</span>
       </div>
-      <span class="dash-cl-progress">${checked}/${total}</span>
+      <span class="dash-cl-progress">${v.checked}/${v.total}</span>
     `;
-    item.onclick = () => loadChecklist(cl.id);
+    item.onclick = () => loadChecklist(v.id);
     container.appendChild(item);
   }
   document.getElementById('dash-cl-clear').textContent = 'Clear';
@@ -385,6 +390,8 @@ function saveTitle() {
   document.getElementById('checklist-title-display').textContent   = val;
   document.getElementById('checklist-title-display').style.display = '';
   document.getElementById('checklist-title-input').style.display   = 'none';
+  const v = visitedChecklists.find(v => v.id === cl.id);
+  if (v) v.title = val;
   persistChecklist(cl);
   renderSidebar();
 }

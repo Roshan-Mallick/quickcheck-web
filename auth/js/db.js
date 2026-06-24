@@ -88,6 +88,7 @@ async function deleteChecklist(id) {
     }
     checklists = checklists.filter(c => c.id !== id);
     sharedChecklists = sharedChecklists.filter(c => c.id !== id);
+    visitedChecklists = visitedChecklists.filter(v => v.id !== id);
     if (activeId === id) { activeId = null; showEmptyState(); }
     renderSidebar();
     showToast('Checklist deleted.');

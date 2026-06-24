@@ -20,6 +20,9 @@ let workspaceMembers  = [];
 let workspaceActivity = [];
 let workspaceRealtime = null;
 
+// Universal visited checklists (tracked via loadChecklist)
+let visitedChecklists = []; // [{ id, title, total, checked, lastVisitedAt }]
+
 // ─── Supabase Init ────────────────────────────────────────────────────────
 
 function initSupabase() {
