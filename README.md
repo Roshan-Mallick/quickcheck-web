@@ -27,7 +27,7 @@ dependencies. Just HTML, CSS, and vanilla JavaScript served over a CDN.
 | Namecheap   | Domain registrar                |
 | Cloudflare  | DNS, SSL, security              |
 
-Deployed at [quickcheck-web.vercel.app](https://quickcheck-web.vercel.app).
+Live at [quickcheck-web.vercel.app](https://quickcheck-web.vercel.app/).
 
 ## Backend & Storage
 
