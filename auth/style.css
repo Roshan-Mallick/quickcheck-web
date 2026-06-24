@@ -2362,7 +2362,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 28px 0;
+  padding: 0;
   flex-shrink: 0;
 }
 .dash-topbar-left {
@@ -2461,7 +2461,7 @@ body {
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: 1fr;
   gap: 12px;
-  padding: 20px 28px 40px;
+  padding: 20px 28px 20px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -2684,11 +2684,10 @@ body {
   .dash-stats { grid-template-columns: repeat(2, 1fr); }
   .dash-content-row {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 16px 16px 20px;
   }
   .dash-checklists { grid-column: 1; }
-  .dash-topbar { padding: 12px 16px 0; justify-content: flex-start; }
-  .dash-topbar .dash-title { display: none; }
+  .dash-topbar { padding: 0; justify-content: flex-start; }
   .dash-topbar-left { display: none; }
   .dash-stats { padding: 12px 16px 0; }
 }
@@ -2698,9 +2697,9 @@ body {
   .dash-cl-list { max-height: 300px; }
   .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .dash-stat { padding: 12px 14px; }
-  .dash-content-row { padding: 8px 8px 0; flex: 1; min-height: 0; }
+  .dash-content-row { padding: 8px 8px 20px; flex: 1; min-height: 0; }
   .dash-cl-detail { padding: 12px; flex: 1; min-height: 0; }
-  .dash-topbar { padding: 12px 12px 0; }
+  .dash-topbar { padding: 0; }
   .dash-stats { padding: 12px 12px 0; }
 }
 
