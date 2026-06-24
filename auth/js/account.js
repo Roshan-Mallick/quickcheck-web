@@ -450,6 +450,9 @@ async function enterApp() {
 
   await loadWorkspaces();
 
+  // Always load personal checklists first — needed for universal search
+  await loadChecklists();
+
   const savedId = localStorage.getItem(WS_STORAGE_KEY);
   if (savedId) {
     const ws = workspaces.find(w => w.id === savedId);
@@ -457,17 +460,12 @@ async function enterApp() {
       if (DEV) console.log('[account] restoring workspace:', savedId);
       await switchWorkspace(savedId);
     } else if (workspaces.length > 0) {
-      // Workspace list was loaded but saved workspace not found — it was deleted
       localStorage.removeItem(WS_STORAGE_KEY);
-      await loadChecklists();
-    } else {
-      // Workspace list is empty (transient failure) — preserve the key
-      if (DEV) console.log('[account] workspaces empty, preserving key for', savedId);
-      await loadChecklists();
     }
-  } else {
-    await loadChecklists();
   }
+
+  // Load shared checklists from ALL workspaces into a universal cache for cross-context search
+  await loadAllSharedChecklists();
 
   renderWorkspaceSwitcher();
 }

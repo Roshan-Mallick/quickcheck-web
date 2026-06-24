@@ -23,6 +23,9 @@ let workspaceRealtime = null;
 // Universal visited checklists (tracked via loadChecklist)
 let visitedChecklists = []; // [{ id, title, total, checked, lastVisitedAt }]
 
+// Universal cache of ALL checklists (personal + all workspaces) for cross-context search
+let universalChecklists = []; // [{ id, title, data, _workspace, _workspaceId }]
+
 // ─── Supabase Init ────────────────────────────────────────────────────────
 
 function initSupabase() {

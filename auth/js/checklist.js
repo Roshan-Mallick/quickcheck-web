@@ -86,8 +86,8 @@ async function loadChecklist(id) {
   activeId = id;
   dashListCleared = false;
 
-  // Search both personal and workspace checklists
-  let cl = checklists.find(c => c.id === id) || sharedChecklists.find(c => c.id === id);
+  // Search in current context first, then fall back to universal cache
+  let cl = checklists.find(c => c.id === id) || sharedChecklists.find(c => c.id === id) || universalChecklists.find(c => c.id === id);
 
   // If found but in wrong context, switch
   if (cl) {
@@ -102,7 +102,7 @@ async function loadChecklist(id) {
     }
   }
 
-  // Not found — try via visitedChecklists (e.g. personal checklists not in memory)
+  // Not found — try via visitedChecklists
   if (!cl) {
     const v = visitedChecklists.find(v => v.id === id);
     if (v && v.wsId) {
@@ -280,7 +280,8 @@ function renderDashboardStats() {
   document.getElementById('ds-members').textContent    = memberCount;
   document.getElementById('ds-success').textContent    = totalItems ? Math.round(totalChecked / totalItems * 100) + '%' : '—';
 
-  document.getElementById('dash-title').textContent = 'Dashboard';
+  const dashTitle = document.getElementById('dash-title');
+  if (dashTitle) dashTitle.textContent = 'Dashboard';
   const badge = document.getElementById('dash-badge');
   const cl = source.find(c => c.id === activeId);
   if (cl) {
@@ -567,28 +568,30 @@ function doSidebarSearch() {
 
   var results = [];
 
-  for (var ci = 0; ci < checklists.length; ci++) {
-    if (checklists[ci].title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(checklists[ci].title, q) });
-    }
-  }
+  // Search every checklist (personal + all workspaces) for universal results
+  var universalSource = checklists.concat(universalChecklists);
 
-  var cl = getActive();
-  if (cl) {
+  for (var ci = 0; ci < universalSource.length; ci++) {
+    var cl = universalSource[ci];
+    if (cl.title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'checklist', clId: cl.id, si: -1, ii: -1, sectionTitle: '', html: highlightText(cl.title, q) });
+    }
     for (var si = 0; si < cl.data.length; si++) {
       var section = cl.data[si];
       if (section.title.toLowerCase().indexOf(q) !== -1) {
-        results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
+        results.push({ type: 'section', clId: cl.id, si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
       }
       for (var ii = 0; ii < section.items.length; ii++) {
         var item = section.items[ii];
         if (item.label.toLowerCase().indexOf(q) !== -1) {
-          results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+          results.push({ type: 'item', clId: cl.id, si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
         }
       }
     }
-    applySearchHighlights(q);
   }
+
+  var activeCl = getActive();
+  if (activeCl) applySearchHighlights(q);
 
   if (results.length === 0) {
     dropdown.innerHTML = '<div class="search-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><p>No results for "' + esc(q) + '"</p></div>';
@@ -603,7 +606,7 @@ function doSidebarSearch() {
     html += '<div class="search-result-group-label">Checklist</div>';
     for (var i = 0; i < checklistResults.length; i++) {
       var r = checklistResults[i];
-      html += '<div class="search-result-item" data-ci="' + r.ci + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
     }
   }
 
@@ -612,7 +615,7 @@ function doSidebarSearch() {
     html += '<div class="search-result-group-label">Sections</div>';
     for (var i = 0; i < sectionResults.length; i++) {
       var r = sectionResults[i];
-      html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
     }
   }
 
@@ -630,7 +633,7 @@ function doSidebarSearch() {
       var items = grouped[sectionNames[s]];
       for (var j = 0; j < items.length; j++) {
         var r = items[j];
-        html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+        html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
       }
     }
   }
@@ -642,10 +645,10 @@ function doSidebarSearch() {
   for (var i = 0; i < resultItems.length; i++) {
     resultItems[i].addEventListener('click', function() {
       var type = this.dataset.type;
+      var clId = this.dataset.clId;
       var si = this.dataset.si !== undefined ? parseInt(this.dataset.si) : -1;
       var ii = this.dataset.ii !== undefined ? parseInt(this.dataset.ii) : -1;
-      var ci = this.dataset.ci !== undefined ? parseInt(this.dataset.ci) : -1;
-      handleSearchResult(type, si, ii, ci);
+      handleSearchResult(type, clId, si, ii);
     });
   }
 
@@ -713,32 +716,34 @@ function closeAllSearch() {
   renderSidebar();
 }
 
-function handleSearchResult(type, si, ii, ci) {
+function handleSearchResult(type, clId, si, ii) {
   closeAllSearch();
 
   if (type === 'checklist') {
-    var cl = checklists[ci];
-    if (cl) loadChecklist(cl.id);
+    if (clId) loadChecklist(clId);
     return;
   }
 
-  if (type === 'section') {
-    var el = document.querySelector('.section-header[data-si="' + si + '"]');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('search-highlight-flash');
-      setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
-    }
-    return;
-  }
-
-  if (type === 'item') {
-    var el = document.querySelector('[data-si="' + si + '"][data-ii="' + ii + '"]');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('search-highlight-flash');
-      setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
-    }
+  if (clId && (type === 'section' || type === 'item')) {
+    loadChecklist(clId).then(function() {
+      setTimeout(function() {
+        if (type === 'section') {
+          var el = document.querySelector('.section-header[data-si="' + si + '"]');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('search-highlight-flash');
+            setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
+          }
+        } else {
+          var el = document.querySelector('[data-si="' + si + '"][data-ii="' + ii + '"]');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('search-highlight-flash');
+            setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
+          }
+        }
+      }, 50);
+    });
   }
 }
 
@@ -770,26 +775,25 @@ function doModalSearch() {
     return;
   }
 
-  var source = activeWorkspace ? sharedChecklists : checklists;
-  var cl = getActive();
   var results = [];
 
-  for (var ci = 0; ci < source.length; ci++) {
-    if (source[ci].title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'checklist', ci: ci, si: -1, ii: -1, sectionTitle: '', html: highlightText(source[ci].title, q) });
-    }
-  }
+  // Search every checklist (personal + all workspaces) for universal results
+  var universalSource = checklists.concat(universalChecklists);
 
-  if (cl) {
+  for (var ci = 0; ci < universalSource.length; ci++) {
+    var cl = universalSource[ci];
+    if (cl.title.toLowerCase().indexOf(q) !== -1) {
+      results.push({ type: 'checklist', clId: cl.id, si: -1, ii: -1, sectionTitle: '', html: highlightText(cl.title, q) });
+    }
     for (var si = 0; si < cl.data.length; si++) {
       var section = cl.data[si];
       if (section.title.toLowerCase().indexOf(q) !== -1) {
-        results.push({ type: 'section', si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
+        results.push({ type: 'section', clId: cl.id, si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
       }
       for (var ii = 0; ii < section.items.length; ii++) {
         var item = section.items[ii];
         if (item.label.toLowerCase().indexOf(q) !== -1) {
-          results.push({ type: 'item', si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
+          results.push({ type: 'item', clId: cl.id, si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
         }
       }
     }
@@ -810,7 +814,7 @@ function doModalSearch() {
     html += '<div class="search-result-group-label">Checklist</div>';
     for (var i = 0; i < checklistResults.length; i++) {
       var r = checklistResults[i];
-      html += '<div class="search-result-item" data-ci="' + (r.ci !== undefined ? r.ci : -1) + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
     }
   }
 
@@ -819,7 +823,7 @@ function doModalSearch() {
     html += '<div class="search-result-group-label">Sections</div>';
     for (var i = 0; i < sectionResults.length; i++) {
       var r = sectionResults[i];
-      html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
     }
   }
 
@@ -837,7 +841,7 @@ function doModalSearch() {
       var items = grouped[sectionNames[s]];
       for (var j = 0; j < items.length; j++) {
         var r = items[j];
-        html += '<div class="search-result-item" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+        html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
       }
     }
   }
@@ -848,10 +852,10 @@ function doModalSearch() {
   for (var i = 0; i < resultItems.length; i++) {
     resultItems[i].addEventListener('click', function() {
       var type = this.dataset.type;
+      var clId = this.dataset.clId;
       var si = this.dataset.si !== undefined ? parseInt(this.dataset.si) : -1;
       var ii = this.dataset.ii !== undefined ? parseInt(this.dataset.ii) : -1;
-      var ci = this.dataset.ci !== undefined ? parseInt(this.dataset.ci) : -1;
-      handleSearchResult(type, si, ii, ci);
+      handleSearchResult(type, clId, si, ii);
     });
   }
 
@@ -905,8 +909,8 @@ document.getElementById('sidebar-search-input').addEventListener('keydown', func
     var type = target.dataset.type;
     var si = target.dataset.si !== undefined ? parseInt(target.dataset.si) : -1;
     var ii = target.dataset.ii !== undefined ? parseInt(target.dataset.ii) : -1;
-    var ci = target.dataset.ci !== undefined ? parseInt(target.dataset.ci) : -1;
-    handleSearchResult(type, si, ii, ci);
+    var clId = target.dataset.clId;
+    handleSearchResult(type, clId, si, ii);
   }
 });
 
@@ -982,8 +986,8 @@ document.getElementById('search-input').addEventListener('keydown', function(e) 
     var type = target.dataset.type;
     var si = target.dataset.si !== undefined ? parseInt(target.dataset.si) : -1;
     var ii = target.dataset.ii !== undefined ? parseInt(target.dataset.ii) : -1;
-    var ci = target.dataset.ci !== undefined ? parseInt(target.dataset.ci) : -1;
-    handleSearchResult(type, si, ii, ci);
+    var clId = target.dataset.clId;
+    handleSearchResult(type, clId, si, ii);
   }
 });
 

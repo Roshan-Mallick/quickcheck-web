@@ -155,6 +155,33 @@ async function loadSharedChecklists(wsId) {
   if (DEV) console.log('[workspace] loaded shared checklists:', sharedChecklists.length);
 }
 
+async function loadAllSharedChecklists() {
+  universalChecklists = [];
+  if (!sb || !currentUser) return;
+  if (DEV) console.log('[workspace] loadAllSharedChecklists for', workspaces.length, 'workspaces');
+  for (const ws of workspaces) {
+    const { data: items, error } = await sb
+      .from('workspace_checklist_items')
+      .select('*')
+      .eq('workspace_id', ws.id)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('[workspace] loadAllSharedChecklists error for ws', ws.id, error);
+      continue;
+    }
+    for (const item of items || []) {
+      universalChecklists.push({
+        id: item.id,
+        title: item.title,
+        data: item.data,
+        _workspace: true,
+        _workspaceId: ws.id,
+      });
+    }
+  }
+  if (DEV) console.log('[workspace] loaded universal checklists:', universalChecklists.length);
+}
+
 async function shareChecklist(wsId, checklistId) {
   if (!sb || !currentUser) return;
   if (DEV) console.log('[workspace] shareChecklist:', checklistId, 'to ws:', wsId);
