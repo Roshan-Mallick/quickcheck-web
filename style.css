@@ -559,7 +559,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   width: 80%;
   height: 80%;
   background:
-    radial-gradient(ellipse at 50% 40%, rgba(233,199,104,0.10) 0%, rgba(201,162,39,0.04) 30%, transparent 65%);
+    radial-gradient(ellipse at 40% 40%, rgba(233,199,104,0.10) 0%, rgba(201,162,39,0.04) 35%, transparent 65%),
+    radial-gradient(ellipse at 60% 60%, rgba(0,200,150,0.04) 0%, transparent 50%);
   filter: blur(60px);
   pointer-events: none;
   z-index: 0;
@@ -569,15 +570,23 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   content: '';
   position: absolute;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  height: 60%;
-  background:
-    radial-gradient(ellipse at 50% 60%, rgba(0,200,150,0.05) 0%, transparent 50%);
-  filter: blur(40px);
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent 0%, #08070a 100%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
+}
+
+.hero-fade-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, #08070a 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 #hero-canvas {
@@ -1388,19 +1397,23 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   gap: var(--space-10);
   font-size: .95rem;
   font-weight: 600;
-  color: rgba(192,202,245,.25);
+  color: var(--accent-2);
   letter-spacing: .02em;
 }
 
 .trust-logos span {
   transition: color var(--duration-fast) var(--ease-out),
-              opacity var(--duration-fast) var(--ease-out);
-  opacity: .7;
+              opacity var(--duration-fast) var(--ease-out),
+              text-shadow var(--duration-fast) var(--ease-out);
+  opacity: .9;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 0 24px rgba(255,255,255,0.08);
 }
 
 .trust-logos span:hover {
-  color: var(--accent);
+  color: var(--accent-2);
   opacity: 1;
+  text-shadow: 0 0 40px rgba(233,199,104,0.4), 0 0 80px rgba(233,199,104,0.15);
 }
 
 /* ── Showcase ──────────────────────────────────────────── */
@@ -1947,12 +1960,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
 /* ── Footer ────────────────────────────────────────────── */
 .footer {
-  border-top: 1px solid rgba(255,255,255,0.08);
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #050508;
   padding: var(--space-16) 0 var(--space-8);
-  box-shadow: var(--shadow-dropdown);
 }
 
 .footer-grid {
@@ -2015,12 +2025,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 /* ── Mobile Accordion Footer (≤768px) ─────────────── */
 .footer-mobile {
   display: none;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  background: var(--glass-spatial);
-  backdrop-filter: blur(var(--glass-spatial-blur));
-  -webkit-backdrop-filter: blur(var(--glass-spatial-blur));
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #050508;
   padding: var(--space-6) 0 var(--space-5);
-  box-shadow: var(--shadow-dropdown);
 }
 
 .fm-brand {
