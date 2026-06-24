@@ -2425,8 +2425,9 @@ body {
 
 /* ── Content Row ───────────────────────────────────────────────── */
 .dash-content-row {
-  display: flex;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   padding: 20px 28px 40px;
   flex: 1;
   min-height: 0;
@@ -2435,7 +2436,7 @@ body {
 
 /* ── Checklist Area (list + detail) ────────────────────────────── */
 .dash-checklists {
-  flex: 1;
+  grid-column: 1 / 4;
   display: flex;
   gap: 16px;
   min-width: 0;
@@ -2572,8 +2573,7 @@ body {
 
 /* Activity Panel */
 .dash-activity {
-  width: 260px;
-  flex-shrink: 0;
+  width: auto;
   min-height: 0;
   background: var(--surface);
   border: 1px solid var(--border);
