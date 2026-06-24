@@ -27,9 +27,67 @@ function updateUserDisplay() {
 
   const topAvatar = document.getElementById('user-avatar-top');
   if (topAvatar) topAvatar.textContent = letter;
+
+  applyAvatarColor(getAvatarColor(currentUser));
 }
 
-// ─── Account modal ────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  '#e07a7a', '#e8a87c', '#e8c87c', '#6daf82',
+  '#5cb8b8', '#5c8db8', '#7c8ce8', '#b87ce8',
+  '#e87cb8', '#c97c7c', '#8cb87c', '#7ca8b8',
+];
+
+function getAvatarColor(user) {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  return meta.avatar_color || null;
+}
+
+function applyAvatarColor(color) {
+  const els = [
+    document.getElementById('user-avatar'),
+    document.getElementById('user-avatar-top'),
+    document.getElementById('account-modal-avatar'),
+    document.getElementById('account-modal-avatar-mobile'),
+  ];
+  els.forEach(el => {
+    if (!el) return;
+    if (color) {
+      el.style.background = color;
+      el.style.borderColor = color;
+      el.style.color = '#fff';
+    } else {
+      el.style.background = '';
+      el.style.borderColor = '';
+      el.style.color = '';
+    }
+  });
+}
+
+function renderAvatarColors() {
+  const container = document.getElementById('avatar-colors');
+  if (!container) return;
+  const current = getAvatarColor(currentUser);
+  container.innerHTML = AVATAR_COLORS.map(c =>
+    `<button type="button" class="avatar-color-swatch${c === current ? ' active' : ''}" style="background:${c};color:${c}" data-color="${c}" onclick="selectAvatarColor('${c}')" title="${c}"></button>`
+  ).join('');
+}
+
+async function selectAvatarColor(color) {
+  if (!sb || !currentUser) return;
+  document.querySelectorAll('.avatar-color-swatch').forEach(el => {
+    el.classList.toggle('active', el.dataset.color === color);
+  });
+  applyAvatarColor(color);
+  try {
+    const meta = { ...(currentUser.user_metadata || {}), avatar_color: color };
+    const { data, error } = await sb.auth.updateUser({ data: meta });
+    if (error) throw error;
+    currentUser = data.user;
+  } catch (err) {
+    showAccountMsg(err.message || 'Failed to save avatar color.', 'error');
+  }
+}
 
 /**
  * Open the account settings modal, pre-fill fields, and show the
@@ -69,6 +127,9 @@ function showAccountModal() {
 
   const mobileAvatar = document.getElementById('account-modal-avatar-mobile');
   if (mobileAvatar) mobileAvatar.textContent = letter;
+
+  applyAvatarColor(getAvatarColor(currentUser));
+  renderAvatarColors();
 
   // Always open on Profile
   showAccountSection('profile');
@@ -110,7 +171,8 @@ async function handleUpdateName(e) {
   btn.textContent = 'Saving…';
 
   try {
-    const { data, error } = await sb.auth.updateUser({ data: { full_name: name } });
+    const existingMeta = currentUser.user_metadata || {};
+    const { data, error } = await sb.auth.updateUser({ data: { ...existingMeta, full_name: name } });
     if (error) throw error;
 
     currentUser = data.user;
