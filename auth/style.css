@@ -2651,10 +2651,14 @@ body {
   .dash-stats { padding: 16px 16px 0; }
 }
 @media (max-width: 600px) {
-  .dash-checklists { flex-direction: column; }
-  .dash-cl-list { width: 100%; max-height: 200px; }
+  #dashboard-view { min-height: calc(100vh - 56px); }
+  .dash-checklists { flex-direction: column; flex: 1; min-height: 0; }
+  .dash-cl-list { width: 100%; max-height: 300px; }
   .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .dash-stat { padding: 12px 14px; }
-  .dash-cl-detail { padding: 16px; }
+  .dash-content-row { padding: 8px 8px 0; flex: 1; min-height: 0; }
+  .dash-cl-detail { padding: 12px; flex: 1; min-height: 0; }
+  .dash-topbar { padding: 12px 12px 0; }
+  .dash-stats { padding: 12px 12px 0; }
 }
 
