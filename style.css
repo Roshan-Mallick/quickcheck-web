@@ -909,8 +909,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--muted-2);
-  margin-bottom: 6px;
+  text-transform: uppercase;
+  color: var(--muted-3);
 }
 
 .dp-ws-name {
@@ -1316,7 +1316,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 }
 
 @media (max-width: 640px) {
-  .dp-sidebar { width: 40px; padding: 10px 6px; }
+  .dp-sidebar { width: 40px; padding: 10px 6px; align-items: center; }
   .dp-main { padding: 12px 10px; gap: 8px; }
   .dp-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .dp-stat { padding: 8px; }
@@ -2670,6 +2670,10 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
   .workflow-step {
     border-right: none !important;
+  }
+
+  .hero .container {
+    gap: 20px;
   }
 }
 
