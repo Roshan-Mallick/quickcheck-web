@@ -150,6 +150,7 @@ async function loadSharedChecklists(wsId) {
     title: item.title,
     data: item.data,
     _workspace: true,
+    _workspaceId: wsId,
   }));
   if (DEV) console.log('[workspace] loaded shared checklists:', sharedChecklists.length);
 }

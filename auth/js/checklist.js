@@ -82,11 +82,41 @@ function renderSidebar() {
   }
 }
 
-function loadChecklist(id) {
+async function loadChecklist(id) {
   activeId = id;
   dashListCleared = false;
-  const source = activeWorkspace ? sharedChecklists : checklists;
-  const cl = source.find(c => c.id === id) || checklists.find(c => c.id === id);
+
+  // Search both personal and workspace checklists
+  let cl = checklists.find(c => c.id === id) || sharedChecklists.find(c => c.id === id);
+
+  // If found but in wrong context, switch
+  if (cl) {
+    if (cl._workspaceId && (!activeWorkspace || activeWorkspace.id !== cl._workspaceId)) {
+      if (DEV) console.log('[checklist] switching to workspace for checklist:', id, 'ws:', cl._workspaceId);
+      await switchWorkspace(cl._workspaceId);
+      cl = sharedChecklists.find(c => c.id === id);
+    } else if (!cl._workspaceId && activeWorkspace) {
+      if (DEV) console.log('[checklist] switching to personal for checklist:', id);
+      await switchToPersonal();
+      cl = checklists.find(c => c.id === id);
+    }
+  }
+
+  // Not found — try via visitedChecklists (e.g. personal checklists not in memory)
+  if (!cl) {
+    const v = visitedChecklists.find(v => v.id === id);
+    if (v && v.wsId) {
+      if (DEV) console.log('[checklist] switching to workspace for checklist:', id, 'ws:', v.wsId);
+      await switchWorkspace(v.wsId);
+      cl = sharedChecklists.find(c => c.id === id);
+    }
+    if (!cl && v && !v.wsId && activeWorkspace) {
+      if (DEV) console.log('[checklist] switching to personal for checklist:', id);
+      await switchToPersonal();
+      cl = checklists.find(c => c.id === id);
+    }
+  }
+
   if (!cl) { if (DEV) console.log('[checklist] loadChecklist not found:', id); showDashboard(); return; }
   if (DEV) console.log('[checklist] loadChecklist:', id, cl.title);
 
@@ -94,7 +124,7 @@ function loadChecklist(id) {
   const idx = visitedChecklists.findIndex(v => v.id === id);
   const total   = cl.data.reduce((n, s) => n + s.items.length, 0);
   const checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
-  const entry = { id, title: cl.title, total, checked, lastVisitedAt: Date.now() };
+  const entry = { id, title: cl.title, total, checked, lastVisitedAt: Date.now(), wsId: cl._workspaceId || null };
   if (idx !== -1) visitedChecklists.splice(idx, 1);
   visitedChecklists.unshift(entry);
 
@@ -355,6 +385,13 @@ function toggleItem(si, ii, checked) {
   updateHeader(cl);
   renderSidebar();
 
+  // Update progress in visited list
+  const v = visitedChecklists.find(v => v.id === cl.id);
+  if (v) {
+    v.total   = cl.data.reduce((n, s) => n + s.items.length, 0);
+    v.checked = cl.data.reduce((n, s) => n + s.items.filter(i => i.checked).length, 0);
+  }
+
   const row = document.querySelector(`[data-si="${si}"][data-ii="${ii}"]`);
   if (row) row.classList.toggle('checked', checked);
 
@@ -391,7 +428,7 @@ function saveTitle() {
   document.getElementById('checklist-title-display').style.display = '';
   document.getElementById('checklist-title-input').style.display   = 'none';
   const v = visitedChecklists.find(v => v.id === cl.id);
-  if (v) v.title = val;
+  if (v) { v.title = val; v.wsId = cl._workspaceId || null; }
   persistChecklist(cl);
   renderSidebar();
 }
