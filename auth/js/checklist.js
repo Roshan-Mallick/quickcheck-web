@@ -272,7 +272,12 @@ function renderDashboardStats() {
   }
   document.getElementById('ds-active').textContent    = active;
   document.getElementById('ds-completed').textContent  = completed;
-  document.getElementById('ds-members').textContent    = activeWorkspace && workspaceMembers.length ? workspaceMembers.length : 1;
+  let memberCount = 1;
+  if (activeWorkspace) {
+    const plan = activeWorkspace.plan || 'free';
+    if (plan !== 'free' && workspaceMembers.length) memberCount = workspaceMembers.length;
+  }
+  document.getElementById('ds-members').textContent    = memberCount;
   document.getElementById('ds-success').textContent    = totalItems ? Math.round(totalChecked / totalItems * 100) + '%' : '—';
 
   document.getElementById('dash-title').textContent = 'Dashboard';
