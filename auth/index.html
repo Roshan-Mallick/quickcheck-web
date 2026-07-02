@@ -9,7 +9,7 @@
     style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
     font-src https://fonts.gstatic.com;
     img-src 'self' data:;
-    connect-src 'self' https://gnzkwjzssumrnafqrmof.supabase.co wss://gnzkwjzssumrnafqrmof.supabase.co;
+    connect-src 'self' https://gnzkwjzssumrnafqrmof.supabase.co wss://gnzkwjzssumrnafqrmof.supabase.co https://gnzkwjzssumrnafqrmof.supabase.co/functions/v1/generate-checklist;
     frame-src 'none';
     object-src 'none';
     base-uri 'self';
@@ -266,6 +266,15 @@
             </svg>
             New checklist
           </button>
+          <button class="sidebar-ai-btn" onclick="openAIChat()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a4 4 0 014 4c0 2-2 3-2 5h-4c0-2-2-3-2-5a4 4 0 014-4z"/>
+              <path d="M12 12v4"/>
+              <path d="M10 20h4"/>
+              <path d="M8 22l1.5-3h5L16 22"/>
+            </svg>
+            Quick-AI
+          </button>
           <div class="sidebar-search">
             <svg class="sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/>
@@ -371,60 +380,21 @@
           <div class="new-option-title">Blank checklist</div>
           <div class="new-option-desc">Start fresh with an empty checklist you can edit inline.</div>
         </button>
-        <button type="button" class="new-option-card" onclick="chooseGenerateChecklist()" aria-label="Generate checklist with ChatGPT">
+        <button type="button" class="new-option-card" onclick="chooseGenerateChecklist()" aria-label="Generate checklist with AI">
           <div class="new-option-icon primary">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              <path d="M12 2a4 4 0 014 4c0 2-2 3-2 5h-4c0-2-2-3-2-5a4 4 0 014-4z"/>
+              <path d="M12 12v4"/>
+              <path d="M10 20h4"/>
+              <path d="M8 22l1.5-3h5L16 22"/>
             </svg>
           </div>
-          <div class="new-option-title">Generate with ChatGPT</div>
-          <div class="new-option-desc">Use ChatGPT to generate a structured checklist from your requirements.</div>
+          <div class="new-option-title">Generate with AI</div>
+          <div class="new-option-desc">Use the AI chat assistant to build a structured checklist from your requirements.</div>
         </button>
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeModal('new-checklist-modal')">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── AI GENERATION MODAL ─────────────────────────────────────── -->
-  <div class="modal-overlay" id="ai-generate-modal">
-    <div class="modal">
-      <div class="modal-label">Generate Checklist with AI</div>
-      <div class="modal-title">Generate with ChatGPT</div>
-      <div class="modal-sub">QuickCheck will embed your context into a self-contained prompt, copy it to your clipboard, and open ChatGPT. Just paste and press Enter.</div>
-      <label class="ai-input-label" for="ai-context-input">Context / Requirements</label>
-      <textarea class="ai-context-input" id="ai-context-input" rows="4" placeholder="Example:&#10;Create a security review checklist for a SaaS application using Supabase authentication and Stripe billing."></textarea>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="closeModal('ai-generate-modal')">Cancel</button>
-        <button class="btn-primary ai-open-btn" id="ai-open-btn" onclick="openChecklistInChatGPT()">Open ChatGPT</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ─── AI GUIDANCE MODAL ────────────────────────────────────────── -->
-  <div class="modal-overlay" id="ai-guidance-modal">
-    <div class="modal">
-      <div class="modal-label">ChatGPT opened</div>
-      <div class="modal-title">Prompt copied to clipboard <span style="font-size:20px">&#10003;</span></div>
-      <div class="modal-sub">The prompt already includes your context — no back-and-forth needed.</div>
-      <div class="guidance-steps">
-        <div class="guidance-step">
-          <div class="guidance-step-num">1</div>
-          <div class="guidance-step-text">Go to the ChatGPT tab that just opened.</div>
-        </div>
-        <div class="guidance-step">
-          <div class="guidance-step-num">2</div>
-          <div class="guidance-step-text">Click the message box and press <kbd>Ctrl+V</kbd> (or <kbd>Cmd+V</kbd>) to paste the prompt.</div>
-        </div>
-        <div class="guidance-step">
-          <div class="guidance-step-num">3</div>
-          <div class="guidance-step-text">Press <kbd>Enter</kbd> to generate your checklist.</div>
-        </div>
-      </div>
-      <div class="guidance-note">Copy the generated Markdown, save as a <code>.md</code> file, and upload using <strong>Upload .md Template</strong>.</div>
-      <div class="modal-actions">
-        <button class="btn-primary" onclick="closeModal('ai-guidance-modal')">Got it</button>
       </div>
     </div>
   </div>
@@ -893,6 +863,53 @@
     </div>
   </div>
 
+  <!-- ─── AI CHAT OVERLAY ──────────────────────────────────────────── -->
+  <div class="quickcheck-ai-overlay" id="quickcheck-ai-overlay">
+    <div class="quickcheck-ai-minimized-bar" id="quickcheck-ai-minimized-bar">
+      <span class="quickcheck-ai-header-title">Quick-AI</span>
+      <div class="quickcheck-ai-header-actions">
+        <button class="quickcheck-ai-header-btn" onclick="document.getElementById('quickcheck-ai-overlay').classList.remove('minimized')" title="Restore">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        </button>
+        <button class="quickcheck-ai-header-btn quickcheck-ai-close-btn" onclick="closeAIChat()" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="quickcheck-ai-header">
+      <span class="quickcheck-ai-header-title">Quick-AI</span>
+      <div class="quickcheck-ai-header-actions">
+        <button class="quickcheck-ai-header-btn" onclick="minimizeAIChat()" title="Minimize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="quickcheck-ai-header-btn" onclick="maximizeAIChat()" title="Maximize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        </button>
+        <button class="quickcheck-ai-header-btn" onclick="resetChat()" title="New conversation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+        <button class="quickcheck-ai-header-btn quickcheck-ai-close-btn" onclick="closeAIChat()" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="quickcheck-ai-messages" id="quickcheck-ai-messages">
+      <div class="quickcheck-ai-messages-inner" id="quickcheck-ai-messages-inner">
+        <div class="quickcheck-ai-msg quickcheck-ai-msg-assistant">Welcome! This is a free student-oriented tool — create checklist .md files and get info about this website. Checklists are downloadable as .md but won't be saved after page reload, so download them to keep your work. Made with free resources only.</div>
+      </div>
+    </div>
+    <div class="quickcheck-ai-footer" id="quickcheck-ai-footer">
+      <div class="quickcheck-ai-input-row">
+        <div class="quickcheck-ai-input-wrap">
+          <textarea class="quickcheck-ai-input" id="quickcheck-ai-input" rows="1" placeholder="Message Quick-AI..."></textarea>
+          <button class="quickcheck-ai-send-btn" onclick="sendChatMessage()" aria-label="Send">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L2 22l10-6 10 6L12 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── TOASTS ───────────────────────────────────────────────────── -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1019,6 +1036,7 @@
       parser.js   → uses uid() only
       checklist.js→ uses uid(), esc(), checklists, activeId, persistChecklist()
       modal.js    → uses parsedData, parseMd(), createBlankChecklist(), etc.
+      ai-chat.js  → Quick-AI overlay, uses fetch(), parseMd(), checklists
       state.js    → declares all let vars, calls init() — must be LAST
   -->
   <script src="config.js"></script>
@@ -1029,6 +1047,7 @@
   <script src="js/parser.js"></script>
   <script src="js/checklist.js"></script>
   <script src="js/modal.js"></script>
+  <script src="js/ai-chat.js"></script>
   <script src="js/workspace.js"></script>
   <script src="js/upgrade.js"></script>
   <script src="js/state.js"></script>
