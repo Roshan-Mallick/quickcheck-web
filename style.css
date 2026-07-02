@@ -2600,6 +2600,16 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
     width: calc(100% - 1.25rem);
   }
 
+  .nav {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .nav-cta,
+  .nav-cta-secondary {
+    padding: .35rem .75rem;
+    font-size: .75rem;
+  }
+
   .hero-headline {
     font-size: clamp(1.7rem, 7vw, 2.2rem);
   }
@@ -2656,6 +2666,21 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
     font-size: .875rem;
   }
 
+  .section-padding { padding-block: var(--space-12); }
+
+  .hero {
+    padding-top: 64px;
+    padding-bottom: 40px;
+  }
+
+  .hero-text-overlay {
+    top: -12px;
+  }
+
+  .hero-visual--centered {
+    margin-top: 80px;
+  }
+
   .footer {
     padding: var(--space-5) 0 var(--space-3);
   }
@@ -2676,6 +2701,20 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
 
   .dp-preview {
     border-radius: 8px;
+  }
+
+  .doc-page > .container {
+    margin-bottom: 48px;
+    padding-top: 56px;
+  }
+
+  .doc-header {
+    padding: 24px 0 16px;
+    margin-bottom: 24px;
+  }
+
+  .doc-header h1 {
+    font-size: 22px;
   }
 }
 

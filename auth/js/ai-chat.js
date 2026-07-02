@@ -8,11 +8,16 @@ function openAIChat() {
   const overlay = document.getElementById('quickcheck-ai-overlay')
   overlay.classList.add('open', 'maximized')
   document.getElementById('quickcheck-ai-input').focus()
+  document.body.style.overflow = 'hidden'
+  if (window.innerWidth <= 900) {
+    closeSidebar()
+  }
 }
 
 function closeAIChat() {
   stopTyping()
   document.getElementById('quickcheck-ai-overlay').classList.remove('open', 'minimized', 'maximized')
+  document.body.style.overflow = ''
 }
 
 function minimizeAIChat() {

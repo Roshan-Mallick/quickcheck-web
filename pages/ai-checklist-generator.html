@@ -105,6 +105,7 @@
 
       .quickai-grid {
         grid-template-columns: 1fr;
+        gap: var(--space-3);
       }
 
       .quickai-cta-row {
@@ -121,6 +122,69 @@
       .quickai-page > .container {
         padding-top: 60px;
         padding-bottom: 40px;
+      }
+
+      .quickai-hero h1 {
+        font-size: clamp(1.35rem, 5vw, 1.75rem);
+      }
+
+      .quickai-hero p {
+        font-size: .925rem;
+      }
+
+      .quickai-card {
+        padding: var(--space-4);
+      }
+
+      .quickai-card h3 {
+        font-size: .9rem;
+      }
+
+      .quickai-card p {
+        font-size: .8rem;
+      }
+
+      .quickai-cta-row .btn-primary {
+        padding: .75rem 1.5rem;
+        font-size: .9rem;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .quickai-page > .container {
+        padding-top: 48px;
+        padding-bottom: 32px;
+      }
+
+      .quickai-hero {
+        margin-bottom: var(--space-7);
+      }
+
+      .quickai-hero h1 {
+        font-size: 1.25rem;
+      }
+
+      .quickai-hero p {
+        font-size: .85rem;
+      }
+
+      .quickai-grid {
+        gap: var(--space-2);
+        margin-bottom: var(--space-7);
+      }
+
+      .quickai-card {
+        padding: var(--space-3);
+      }
+
+      .quickai-card-icon {
+        width: 30px;
+        height: 30px;
+      }
+
+      .quickai-card-icon svg {
+        width: 15px;
+        height: 15px;
       }
     }
   </style>
