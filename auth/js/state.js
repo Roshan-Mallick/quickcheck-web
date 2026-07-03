@@ -61,10 +61,11 @@ async function init() {
 
   const { data: { session } } = await sb.auth.getSession();
 
-  // Check for workspace invite token in URL
+  // Check for workspace invite token in URL (path or query param)
   const inviteMatch = window.location.pathname.match(/\/auth\/invite\/(.+)/);
-  if (inviteMatch) {
-    const token = inviteMatch[1];
+  const inviteParam = new URLSearchParams(window.location.search).get('invite');
+  const token = inviteMatch?.[1] || inviteParam;
+  if (token) {
     window.history.replaceState({}, document.title, '/auth/');
     sessionStorage.setItem('quickcheck_invite_token', token);
     window.pendingInviteToken = token;

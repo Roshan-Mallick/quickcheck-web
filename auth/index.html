@@ -23,7 +23,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/auth/style.css" />
 </head>
 <body>
 
@@ -31,7 +31,7 @@
   <div id="auth-screen">
     <header class="auth-header">
       <a href="../index.html" class="auth-brand" aria-label="Go to Quickcheck home page">
-        <img src="../assets/logo.png" alt="" class="auth-brand-icon">
+        <img src="/assets/logo.png" alt="" class="auth-brand-icon">
         <span class="auth-brand-text">Quickcheck</span>
       </a>
       <div class="auth-header-tabs">
@@ -318,7 +318,7 @@
         <div class="sidebar-header">
           <div class="sidebar-header-top">
             <div class="app-brand">
-              <img src="../assets/logo.png" alt="Quickcheck Logo" style="width:28px; height:28px; object-fit:contain;" />
+              <img src="/assets/logo.png" alt="Quickcheck Logo" style="width:28px; height:28px; object-fit:contain;" />
               <span class="app-brand-text">Quickcheck</span>
             </div>
             <button type="button" class="sidebar-avatar-btn" onclick="showAccountModal()" title="Account settings">
@@ -1106,19 +1106,19 @@
       ai-chat.js  → Quick-AI overlay, uses fetch(), parseMd(), checklists
       state.js    → declares all let vars, calls init() — must be LAST
   -->
-  <script src="config.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/account.js"></script>
-  <script src="js/db.js"></script>
-  <script src="js/parser.js"></script>
-  <script src="js/checklist.js"></script>
-  <script src="js/modal.js"></script>
-  <script src="js/ai-chat.js"></script>
-  <script src="js/workspace.js"></script>
-  <script src="js/invite.js"></script>
-  <script src="js/upgrade.js"></script>
-  <script src="js/state.js"></script>
+  <script src="/auth/config.js"></script>
+  <script src="/auth/js/utils.js"></script>
+  <script src="/auth/js/auth.js"></script>
+  <script src="/auth/js/account.js"></script>
+  <script src="/auth/js/db.js"></script>
+  <script src="/auth/js/parser.js"></script>
+  <script src="/auth/js/checklist.js"></script>
+  <script src="/auth/js/modal.js"></script>
+  <script src="/auth/js/ai-chat.js"></script>
+  <script src="/auth/js/workspace.js"></script>
+  <script src="/auth/js/invite.js"></script>
+  <script src="/auth/js/upgrade.js"></script>
+  <script src="/auth/js/state.js"></script>
 
 </body>
 </html>

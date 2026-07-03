@@ -230,8 +230,12 @@ async function acceptInviteFromToken() {
   btn.textContent = 'Joining…';
 
   try {
+    console.log('[invite] Accepting invite with token:', _inviteToken);
+    console.log('[invite] Current user:', currentUser?.email);
     const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { token: _inviteToken });
+    console.log('[invite] RPC result:', { wsId, error });
     if (error) {
+      console.error('[invite] Accept error:', error);
       showToast(error.message || 'Failed to accept invitation.', 'error');
       btn.disabled = false;
       btn.textContent = 'Accept Invite';
@@ -241,13 +245,17 @@ async function acceptInviteFromToken() {
     window.pendingInviteToken = null;
     showToast('You joined the workspace!');
     await loadWorkspaces();
+    console.log('[invite] Workspaces after load:', workspaces);
     if (wsId) {
       localStorage.setItem(WS_STORAGE_KEY, wsId);
       await switchWorkspace(wsId);
+    } else {
+      console.error('[invite] wsId is null/undefined after successful RPC');
     }
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-screen').style.display = 'flex';
   } catch (err) {
+    console.error('[invite] Catch error:', err);
     showToast(err.message || 'Failed to accept invitation.', 'error');
     btn.disabled = false;
     btn.textContent = 'Accept Invite';
@@ -279,5 +287,7 @@ function formatRole(role) {
 
 function isExpired(expiresAt) {
   if (!expiresAt) return false;
-  return new Date(expiresAt + 'Z') < new Date();
+  const hasTz = expiresAt.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(expiresAt);
+  const d = hasTz ? new Date(expiresAt) : new Date(expiresAt + 'Z');
+  return d < new Date();
 }

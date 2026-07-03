@@ -2,9 +2,6 @@
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }
   ],
-  "rewrites": [
-    { "source": "/auth/invite/:token", "destination": "/auth/index.html" }
-  ],
   "headers": [
     {
       "source": "/(.*)\\.(js|css|png|ico)",
