@@ -66,16 +66,27 @@ async function init() {
   if (inviteMatch) {
     const token = inviteMatch[1];
     window.history.replaceState({}, document.title, '/auth/');
+    sessionStorage.setItem('quickcheck_invite_token', token);
+    window.pendingInviteToken = token;
     if (session?.user) {
       currentUser = session.user;
-      await processInviteByToken(token);
-      await enterApp();
-    } else {
-      window.pendingInviteToken = token;
+    }
+    await handleInviteToken(token);
+    return;
+  }
+
+  // Restore pending invite token after OAuth redirect (page reload)
+  const savedToken = sessionStorage.getItem('quickcheck_invite_token');
+  if (savedToken && !window.pendingInviteToken) {
+    window.pendingInviteToken = savedToken;
+    if (session?.user) {
+      currentUser = session.user;
+      await handleInviteToken(savedToken);
+      return;
     }
   }
 
-  if (session?.user && !inviteMatch) {
+  if (session?.user) {
     currentUser = session.user;
     await enterApp();
   }
@@ -83,10 +94,12 @@ async function init() {
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
-      if (window.pendingInviteToken) {
-        const token = window.pendingInviteToken;
+      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
+      if (token) {
         window.pendingInviteToken = null;
-        await processInviteByToken(token);
+        sessionStorage.removeItem('quickcheck_invite_token');
+        await handleInviteToken(token);
+        return;
       }
       await enterApp();
     }
@@ -94,6 +107,10 @@ async function init() {
       currentUser = null;
       document.getElementById('auth-screen').style.display = 'flex';
       document.getElementById('app-screen').style.display  = 'none';
+      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
+      if (token) {
+        await handleInviteToken(token);
+      }
     }
   });
 }

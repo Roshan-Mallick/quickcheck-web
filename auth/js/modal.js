@@ -19,7 +19,9 @@ function showConfirmModal({
 
   confirmAction = onConfirm;
 
-  document.getElementById('confirm-action-btn').onclick = () => {
+  const actionBtn = document.getElementById('confirm-action-btn');
+  actionBtn.style.display = '';
+  actionBtn.onclick = () => {
     closeModal('confirm-modal');
 
     if (typeof confirmAction === 'function') {

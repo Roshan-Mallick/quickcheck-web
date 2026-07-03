@@ -5,20 +5,24 @@
  */
 function switchAuthView(view) {
   authView = view;
-  const views = ['login', 'register', 'forgot', 'forgot-sent'];
+  const views = ['login', 'register', 'forgot', 'forgot-sent', 'invite'];
   views.forEach(v => {
     const el = document.getElementById('auth-view-' + v);
     if (el) el.hidden = v !== view;
   });
   const isLoginFlow = view === 'login' || view === 'forgot' || view === 'forgot-sent';
+  const isInviteFlow = view === 'invite';
   document.getElementById('auth-tab-login').classList.toggle('active', isLoginFlow);
   document.getElementById('auth-tab-register').classList.toggle('active', view === 'register');
+  document.getElementById('auth-tab-login').style.display = isInviteFlow ? 'none' : '';
+  document.getElementById('auth-tab-register').style.display = isInviteFlow ? 'none' : '';
   clearAuthMessages();
-  // Update URL param without reloading
-  const url = new URL(window.location);
-  if (view === 'login') url.searchParams.delete('view');
-  else url.searchParams.set('view', view);
-  history.replaceState(null, '', url);
+  if (!isInviteFlow) {
+    const url = new URL(window.location);
+    if (view === 'login') url.searchParams.delete('view');
+    else url.searchParams.set('view', view);
+    history.replaceState(null, '', url);
+  }
 }
 
 // On load, respect ?view=register URL param
@@ -343,6 +347,12 @@ async function handleRegisterSubmit(e) {
 
     if (data?.user && data?.session) {
       currentUser = data.user;
+      if (window.pendingInviteToken) {
+        const token = window.pendingInviteToken;
+        window.pendingInviteToken = null;
+        await handleInviteToken(token);
+        return;
+      }
       await enterApp();
       return;
     }

@@ -488,7 +488,7 @@ function renderWorkspaceMembers() {
           <option value="editor" ${m.role === 'editor' ? 'selected' : ''}>Editor</option>
           <option value="owner" ${m.role === 'owner' ? 'selected' : ''}>Owner</option>
         </select>
-        ${isOwner && !isMe && m.status === 'active'
+        ${isOwner && !isMe
           ? `<button class="ws-member-remove" onclick="removeWorkspaceMember('${activeWorkspace?.id}', '${m.user_id}')" title="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
           : ''}
         ${m.status === 'pending' && isMe
@@ -799,7 +799,6 @@ function showWorkspaceSettingsMenu(e, wsId) {
   }
 
   const svgRename = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
-  const svgLink = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>';
   const svgUsers = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>';
   const svgDesc = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
   const svgLeave = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
@@ -808,7 +807,6 @@ function showWorkspaceSettingsMenu(e, wsId) {
   menu.innerHTML = `
     <div class="ws-settings-menu-header">${esc(ws.name)}</div>
     <button class="ws-settings-menu-item" onclick="event.stopPropagation(); showRenameModal('${wsId}')">${svgRename} Rename Workspace</button>
-    <button class="ws-settings-menu-item" onclick="event.stopPropagation(); copyInviteLink('${wsId}')">${svgLink} Copy Invite Link</button>
     <button class="ws-settings-menu-item" onclick="event.stopPropagation(); showManageMembers('${wsId}')">${svgUsers} Manage Members</button>
     <button class="ws-settings-menu-item" onclick="event.stopPropagation(); showDescriptionModal('${wsId}')">${svgDesc} Change Description</button>
     <div class="ws-settings-menu-divider"></div>
@@ -922,28 +920,6 @@ async function submitWorkspaceDescription() {
   }
 }
 
-// ─── UI — Copy Invite Link ─────────────────────────────────────────────
-
-async function copyInviteLink(wsId) {
-  closeWorkspaceSettingsMenu();
-  const ws = workspaces.find(w => w.id === wsId);
-  if (!ws) return;
-  try {
-    let token = ws.invite_token;
-    if (!token) {
-      const { data, error } = await sb.rpc('generate_workspace_invite_code', { ws_id: wsId });
-      if (error) { showToast(error.message, 'error'); return; }
-      token = data;
-      ws.invite_token = token;
-    }
-    const url = `${window.location.origin}/auth/invite/${token}`;
-    await navigator.clipboard.writeText(url);
-    showToast('Invite link copied');
-  } catch (err) {
-    showToast('Failed to copy invite link.', 'error');
-  }
-}
-
 // ─── UI — Manage Members Modal ─────────────────────────────────────────
 
 async function showManageMembers(wsId) {
@@ -1022,7 +998,7 @@ function renderManageMembersModal(ws) {
 
   // ── Leave button ─────────────────────────────────────────────
   const leaveBtn = document.getElementById('mm-leave-btn');
-  leaveBtn.style.display = isOwner ? 'none' : 'inline-flex';
+  leaveBtn.style.display = 'none';
 
   // ── Members list ─────────────────────────────────────────────
   const list = document.getElementById('mm-members-list');
@@ -1040,35 +1016,30 @@ function renderManageMembersModal(ws) {
 
     // Determine which actions menu items to show
     let actions = [];
-    if (isOwner && !isMe && m.status === 'active') {
-      if (m.role === 'admin') {
-        actions.push({ label: 'Make Member', action: 'downgrade', role: 'editor' });
-        actions.push({ type: 'divider' });
-        actions.push({ label: 'Transfer Ownership', action: 'transfer' });
-        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
-      } else if (m.role === 'editor' || m.role === 'viewer') {
-        actions.push({ label: 'Make Admin', action: 'promote', role: 'admin' });
-        actions.push({ type: 'divider' });
-        actions.push({ label: 'Transfer Ownership', action: 'transfer' });
-        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
+    if (isMe && m.status === 'active') {
+      if (isOwner) {
+        actions.push({ label: 'Exit', action: 'owner_exit', danger: true });
+      } else {
+        actions.push({ label: 'Leave Workspace', action: 'leave', danger: true });
       }
+    } else if (isOwner && !isMe && m.status === 'active') {
+      actions.push({ label: 'Remove', action: 'remove', danger: true });
+    } else if (isOwner && !isMe) {
+      actions.push({ label: 'Remove', action: 'remove', danger: true });
     } else if (isAdmin && !isMe && m.status === 'active') {
       if (m.role === 'editor' || m.role === 'viewer') {
         actions.push({ label: 'Make Admin', action: 'promote', role: 'admin' });
         actions.push({ type: 'divider' });
-        actions.push({ label: 'Remove Member', action: 'remove', danger: true });
+        actions.push({ label: 'Remove', action: 'remove', danger: true });
       }
     }
 
-    const actionsId = 'mm-act-' + m.id.replace(/-/g, '_');
-    const actionsMenu = actions.length
-      ? `<div class="mm-action-menu" id="${actionsId}">
-           ${actions.map(a => a.type === 'divider'
-             ? '<div class="mm-action-divider"></div>'
-             : `<button class="mm-action-item${a.danger ? ' danger' : ''}" onclick="event.stopPropagation(); handleMemberAction('${esc(m.user_id)}','${a.action}','${esc(m.name)}'${a.role ? ",'"+a.role+"'" : ''})">${esc(a.label)}</button>`
-           ).join('')}
-         </div>`
-      : '';
+    const renderActions = (dangerOnly) => {
+      if (!actions.length) return '';
+      return actions.map(a =>
+        `<button class="mm-action-btn${a.danger ? ' danger' : ''}" data-user-id="${esc(m.user_id)}" data-action="${esc(a.action)}" data-user-name="${esc(m.name)}"${a.role ? ' data-role="'+esc(a.role)+'"' : ''}>${esc(a.label)}</button>`
+      ).join(' ');
+    };
 
     return `
 <div class="mm-member-row ${rowClass}" data-user-id="${esc(m.user_id)}">
@@ -1086,11 +1057,7 @@ function renderManageMembersModal(ws) {
     <span class="mm-status-badge ${m.status}">${m.status === 'active' ? 'Active' : 'Pending'}</span>
   </div>
   <div class="mm-member-actions">
-    ${actions.length
-      ? `<button class="mm-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-         </button>${actionsMenu}`
-      : ''}
+    ${renderActions()}
   </div>
 </div>
 
@@ -1106,12 +1073,7 @@ function renderManageMembersModal(ws) {
       </div>
     </div>
     ${actions.length
-      ? `<div class="member-actions-container">
-          <button class="member-actions-btn" onclick="event.stopPropagation(); openMemberActions(this, '${esc(m.user_id)}')" title="Actions">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-          </button>
-          ${actionsMenu}
-        </div>`
+      ? `<div class="member-card-actions">${renderActions()}</div>`
       : ''}
   </div>
 </div>`;
@@ -1169,6 +1131,17 @@ function closeMemberActions() {
 }
 
 document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.mm-action-btn');
+  if (btn) {
+    const userId = btn.dataset.userId;
+    const action = btn.dataset.action;
+    const userName = btn.dataset.userName;
+    const role = btn.dataset.role;
+    if (userId && action) {
+      handleMemberAction(userId, action, userName, role);
+    }
+    return;
+  }
   if (!e.target.closest('.mm-member-actions, .member-actions-container')) closeMemberActions();
 });
 
@@ -1193,6 +1166,12 @@ function handleMemberAction(userId, action, userName, role) {
     case 'remove':
       confirmRemoveMember(wsId, userId, userName);
       break;
+    case 'leave':
+      confirmLeaveWorkspace(wsId);
+      break;
+    case 'owner_exit':
+      handleOwnerExitWorkspace(wsId);
+      break;
   }
 }
 
@@ -1213,6 +1192,50 @@ function confirmTransferOwnership(wsId, userId, userName) {
       if (ws) renderManageMembersModal(ws);
     }
   });
+}
+
+// ── Owner Exit (Transfer then Leave) ────────────────────────────
+
+function handleOwnerExitWorkspace(wsId) {
+  const others = workspaceMembers.filter(m => m.status === 'active' && m.user_id !== currentUser?.id);
+  if (!others.length) {
+    showToast('You are the only member. Delete the workspace instead.', 'error');
+    return;
+  }
+  const list = others.map(m =>
+    `<button class="mm-action-item" onclick="closeModal('confirm-modal'); transferAndLeave('${wsId}','${esc(m.user_id)}','${esc(m.name)}')">
+      ${esc(m.name || m.email)}
+    </button>`
+  ).join('');
+  const modal = document.getElementById('confirm-modal');
+  document.getElementById('confirm-label').textContent = 'Transfer Ownership';
+  document.getElementById('confirm-title').textContent = 'Transfer ownership before leaving';
+  document.getElementById('confirm-message').innerHTML =
+    'You must transfer ownership to another member before you can leave.' +
+    '<div style="margin-top:12px;display:flex;flex-direction:column;gap:6px">' + list + '</div>';
+  document.getElementById('confirm-action-btn').style.display = 'none';
+  const cancelBtn = document.querySelector('#confirm-modal .btn-outline');
+  if (cancelBtn) cancelBtn.textContent = 'Cancel';
+  modal.classList.add('open');
+}
+
+async function transferAndLeave(wsId, newOwnerId, newOwnerName) {
+  const { error } = await sb.rpc('transfer_workspace_ownership', { ws_id: wsId, new_owner_id: newOwnerId });
+  if (error) { showToast(error.message, 'error'); return; }
+  showToast('Ownership transferred to ' + newOwnerName + '.');
+  await loadWorkspaces();
+  const { error: leaveErr } = await sb.rpc('leave_workspace', { ws_id: wsId });
+  if (leaveErr) { showToast(leaveErr.message, 'error'); return; }
+  showToast('You left the workspace.');
+  closeModal('manage-members-modal');
+  if (activeWorkspace && activeWorkspace.id === wsId) {
+    activeWorkspace = null;
+    localStorage.removeItem(WS_STORAGE_KEY);
+    sharedChecklists = [];
+    await loadChecklists();
+    renderSidebar();
+  }
+  await loadWorkspaces();
 }
 
 // ── Remove Member ───────────────────────────────────────────────
