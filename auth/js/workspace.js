@@ -320,7 +320,7 @@ async function declineInvitation(wsId) {
 
 async function processInviteByToken(token) {
   if (!sb || !currentUser || !token) return;
-  const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { token });
+  const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { input_token: token });
   if (error) {
     console.error('Invite token error:', error);
     showToast(error.message || 'Invalid or expired invite link.', 'error');

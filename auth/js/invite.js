@@ -232,7 +232,7 @@ async function acceptInviteFromToken() {
   try {
     console.log('[invite] Accepting invite with token:', _inviteToken);
     console.log('[invite] Current user:', currentUser?.email);
-    const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { token: _inviteToken });
+    const { data: wsId, error } = await sb.rpc('accept_workspace_invite_by_token', { input_token: _inviteToken });
     console.log('[invite] RPC result:', { wsId, error });
     if (error) {
       console.error('[invite] Accept error:', error);
