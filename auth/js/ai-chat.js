@@ -141,8 +141,14 @@ function buildChatActions() {
         Import to Workspace...
       </button>
     </div>
-    <div class="quickcheck-ai-ws-picker" id="quickcheck-ai-ws-picker">
-      <div class="quickcheck-ai-ws-list" id="quickcheck-ai-ws-list"></div>
+    <div class="quickcheck-ai-ws-picker" id="quickcheck-ai-ws-picker" onclick="if(event.target===this)closeWorkspacePicker()">
+      <div class="quickcheck-ai-ws-modal">
+        <div class="quickcheck-ai-ws-modal-header">
+          <span>Select workspace</span>
+          <button class="quickcheck-ai-ws-modal-close" onclick="closeWorkspacePicker()">&times;</button>
+        </div>
+        <div class="quickcheck-ai-ws-list" id="quickcheck-ai-ws-list"></div>
+      </div>
     </div>
   `
   return panel
@@ -151,9 +157,14 @@ function buildChatActions() {
 function toggleWorkspacePicker() {
   const picker = document.getElementById('quickcheck-ai-ws-picker')
   if (!picker) return
-  const shown = picker.style.display === 'block'
-  picker.style.display = shown ? 'none' : 'block'
+  const shown = picker.classList.contains('open')
+  picker.classList.toggle('open')
   if (!shown) populateWorkspacePicker()
+}
+
+function closeWorkspacePicker() {
+  const picker = document.getElementById('quickcheck-ai-ws-picker')
+  if (picker) picker.classList.remove('open')
 }
 
 function populateWorkspacePicker() {

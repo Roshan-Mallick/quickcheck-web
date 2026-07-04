@@ -408,7 +408,10 @@
               </div>
             </div>
             <div class="dash-activity">
-              <div class="dash-activity-header">Activity</div>
+              <div class="dash-activity-header">
+                <span>Activity</span>
+                <button class="dash-activity-clear" id="dash-activity-clear" onclick="clearWorkspaceActivity()" style="display:none">Clear all</button>
+              </div>
               <div class="dash-activity-feed" id="dash-activity-feed"></div>
             </div>
           </div>
@@ -798,7 +801,10 @@
 
         <!-- Activity -->
         <div class="ws-settings-section" id="ws-sec-activity">
-          <div class="account-section-title">Activity log</div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="account-section-title" style="margin:0">Activity log</div>
+            <button class="ws-activity-clear" id="ws-activity-clear" onclick="clearWorkspaceActivity()" style="display:none">Clear all</button>
+          </div>
           <div id="workspace-activity-list"></div>
         </div>
 

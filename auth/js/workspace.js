@@ -104,6 +104,7 @@ async function switchWorkspace(wsId) {
     loadWorkspaceMembers(wsId),
     loadWorkspaceActivity(wsId),
   ]);
+  renderWorkspaceActivity();
   subscribeWorkspaceRealtime(wsId);
   renderSidebar();
   if (!sharedChecklists.length) showDashboard();
@@ -476,9 +477,10 @@ function renderWorkspaceMembers() {
   el.innerHTML = workspaceMembers.map(m => {
     const isMe = m.user_id === currentUserId;
     const statusLabel = m.status === 'pending' ? ' (pending)' : '';
+    const color = avatarColorForUser(m.user_id, m.avatar_color);
     return `
       <div class="ws-member-row ${m.status}">
-        <div class="ws-member-avatar">${(m.name?.[0] || m.email?.[0] || '?').toUpperCase()}</div>
+        <div class="ws-member-avatar" style="background:${color};color:#fff;border-color:${color}">${(m.name?.[0] || m.email?.[0] || '?').toUpperCase()}</div>
         <div class="ws-member-info">
           <span class="ws-member-name">${esc(m.name || m.email)}${isMe ? ' <span class="ws-member-you">(you)</span>' : ''}</span>
           <span class="ws-member-email">${esc(m.email)}${statusLabel}</span>
@@ -507,35 +509,86 @@ function renderWorkspaceMembers() {
 function renderWorkspaceActivity() {
   const el = document.getElementById('workspace-activity-list');
   if (!el) return;
+  const clearBtn = document.getElementById('ws-activity-clear');
+
+  const isOwner = workspaceMembers.some(m => m.user_id === currentUser?.id && m.role === 'owner');
+  if (clearBtn) clearBtn.style.display = isOwner ? '' : 'none';
+
   if (!workspaceActivity.length) {
     el.innerHTML = '<p class="ws-empty">No activity yet.</p>';
     return;
   }
+
   el.innerHTML = workspaceActivity.map(a => {
     const time = timeAgo(a.created_at);
+    const checkedAttr = a.acknowledged ? 'checked' : '';
+    const hasId = a.id ? '' : ' style="pointer-events:none;opacity:0.4"';
+    const ackInfo = a.acknowledged && a.acknowledged_by_name
+      ? `<span class="ws-activity-ack">✓ Acknowledged by ${esc(a.acknowledged_by_name)}</span>`
+      : '';
     return `
-      <div class="ws-activity-item">
+      <div class="ws-activity-item ${a.acknowledged ? 'ws-activity-acknowledged' : ''}">
+        <label class="ws-activity-check-label"${hasId}>
+          <input type="checkbox" class="ws-activity-check" ${checkedAttr}
+            data-activity-id="${a.id || ''}" />
+        </label>
         <span class="ws-activity-user">${esc(a.user_name)}</span>
-        <span class="ws-activity-action">${esc(formatAction(a.action, a.metadata))}</span>
+        <span class="ws-activity-action">${esc(formatAction(a.action, a.metadata, a.target_name))} ${ackInfo}</span>
         <span class="ws-activity-time">${time}</span>
       </div>
     `;
   }).join('');
+
+  el.querySelectorAll('.ws-activity-check').forEach(cb => {
+    cb.addEventListener('change', async function() {
+      await toggleActivityAck(this.dataset.activityId, this.checked);
+    });
+  });
 }
 
-function formatAction(action, meta) {
+async function clearWorkspaceActivity() {
+  console.log('[workspace] clearWorkspaceActivity clicked, activeWorkspace:', activeWorkspace);
+  if (!sb || !currentUser || !activeWorkspace) {
+    console.warn('[workspace] clearWorkspaceActivity blocked:', { sb: !!sb, user: !!currentUser, ws: !!activeWorkspace });
+    showToast('Cannot clear: not in a workspace.', 'error');
+    return;
+  }
+  try {
+    console.log('[workspace] calling clear_workspace_activity RPC for ws:', activeWorkspace.id);
+    const { error } = await sb.rpc('clear_workspace_activity', { ws_id: activeWorkspace.id });
+    if (error) {
+      console.error('[workspace] clear RPC error:', error);
+      showToast(error.message, 'error');
+      return;
+    }
+    workspaceActivity = [];
+    renderWorkspaceActivity();
+    renderDashboardActivity();
+    showToast('Activity history cleared.', 'success');
+  } catch (e) {
+    console.error('[workspace] clearWorkspaceActivity exception:', e);
+    showToast('Failed to clear history: ' + e.message, 'error');
+  }
+}
+
+function formatAction(action, meta, target_name) {
   if (!meta) meta = {};
+  const t = target_name || meta.email || meta.target_name || '';
   switch (action) {
     case 'workspace_created': return 'created this workspace';
-    case 'member_invited': return `invited ${meta.email || 'a member'}`;
-    case 'member_accepted': return 'joined the workspace';
-    case 'member_removed': return `removed ${meta.email || 'a member'}`;
-    case 'member_role_changed': return `changed role of ${meta.email || 'a member'}`;
+    case 'member_invited': return `invited ${t || 'a member'}`;
+    case 'member_joined': return 'joined the workspace';
+    case 'member_removed': return `removed ${t || 'a member'}`;
+    case 'member_role_changed': return `changed role of ${t || 'a member'}`;
     case 'ownership_transferred': return 'transferred ownership';
     case 'workspace_left': return 'left the workspace';
-    case 'invitation_sent': return `sent invitation to ${meta.email || 'email'}`;
+    case 'invitation_sent': return `sent invitation to ${t || 'email'}`;
     case 'checklist_shared': return 'shared a checklist';
     case 'checklist_unshared': return 'removed a checklist';
+    case 'item_checked': return `checked "${t}"`;
+    case 'item_unchecked': return `unchecked "${t}"`;
+    case 'item_added': return `added "${t}"`;
+    case 'item_deleted': return `deleted "${t}"`;
     default: return action.replace(/_/g, ' ');
   }
 }
@@ -549,6 +602,36 @@ function timeAgo(dateStr) {
   if (diff < 86400) return Math.floor(diff / 3600) + 'h';
   if (diff < 2592000) return Math.floor(diff / 86400) + 'd';
   return new Date(dateStr).toLocaleDateString();
+}
+
+async function toggleActivityAck(activityId, checked) {
+  if (!sb || !currentUser) return;
+  if (!activityId) { console.warn('[activity] no id on item'); return; }
+  const idx = workspaceActivity.findIndex(a => a.id === activityId);
+  if (idx === -1) return;
+  const prev = workspaceActivity[idx];
+  const userName = getDisplayName(currentUser);
+  workspaceActivity[idx] = {
+    ...prev,
+    acknowledged: checked,
+    acknowledged_by: checked ? currentUser.id : null,
+    acknowledged_by_name: checked ? userName : null,
+  };
+  renderWorkspaceActivity();
+  const { error } = await sb.rpc('toggle_activity_acknowledgment', {
+    p_activity_id: activityId,
+    p_checked: checked,
+  });
+  if (error) {
+    workspaceActivity[idx] = { ...prev };
+    renderWorkspaceActivity();
+    showToast('Failed to update acknowledgment.', 'error');
+    console.error('toggleActivityAck error:', error);
+  } else if (checked) {
+    showToast('Activity acknowledged.');
+  } else {
+    showToast('Acknowledgment removed.');
+  }
 }
 
 // ─── UI — Share Modal ────────────────────────────────────────────────────
@@ -1013,6 +1096,7 @@ function renderManageMembersModal(ws) {
     const roleClass = m.role === 'owner' ? 'role-owner' : m.role === 'admin' ? 'role-admin' : '';
     const avatarClass = m.role === 'owner' ? 'owner-bg' : m.role === 'admin' ? 'admin-bg' : '';
     const rowClass = m.status === 'pending' ? 'pending' : '';
+    const color = avatarColorForUser(m.user_id, m.avatar_color);
 
     // Determine which actions menu items to show
     let actions = [];
@@ -1043,7 +1127,7 @@ function renderManageMembersModal(ws) {
 
     return `
 <div class="mm-member-row ${rowClass}" data-user-id="${esc(m.user_id)}">
-  <div class="mm-member-avatar ${avatarClass}">${esc(initial)}</div>
+  <div class="mm-member-avatar ${avatarClass}" style="background:${color};color:#fff;border-color:${color}">${esc(initial)}</div>
   <div class="mm-member-name">
     <span class="mm-member-cell">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</span>
   </div>
@@ -1063,7 +1147,7 @@ function renderManageMembersModal(ws) {
 
 <div class="member-card ${rowClass}" data-user-id="${esc(m.user_id)}">
   <div class="member-header">
-    <div class="member-avatar ${avatarClass}">${esc(initial)}</div>
+    <div class="member-avatar ${avatarClass}" style="background:${color};color:#fff;border-color:${color}">${esc(initial)}</div>
     <div class="member-main">
       <div class="member-name">${esc(m.name)}${isMe ? '<span class="you-tag">(you)</span>' : ''}</div>
       <div class="member-email">${esc(m.email)}</div>

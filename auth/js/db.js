@@ -29,13 +29,14 @@ async function persistChecklist(cl) {
     return;
   }
 
-  if (DEV) console.log('[db] persistChecklist:', cl.id, cl.title, 'ws mode:', !!activeWorkspace);
+  const wsId = cl._workspaceId || activeWorkspace?.id;
+  if (DEV) console.log('[db] persistChecklist:', cl.id, cl.title, 'wsId:', wsId);
 
-  if (activeWorkspace) {
+  if (wsId) {
     const { error } = await sb.from('workspace_checklist_items').upsert(
       {
         id:           cl.id,
-        workspace_id: activeWorkspace.id,
+        workspace_id: wsId,
         title:        cl.title,
         data:         cl.data,
         updated_at:   new Date().toISOString(),

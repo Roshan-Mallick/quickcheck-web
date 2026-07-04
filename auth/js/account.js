@@ -43,6 +43,17 @@ function getAvatarColor(user) {
   return meta.avatar_color || null;
 }
 
+function avatarColorForUser(userId, storedColor) {
+  if (storedColor) return storedColor;
+  if (!userId) return '#7c8ce8';
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) - hash) + userId.charCodeAt(i);
+    hash |= 0;
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 function applyAvatarColor(color) {
   const els = [
     document.getElementById('user-avatar'),

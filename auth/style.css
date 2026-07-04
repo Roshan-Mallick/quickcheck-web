@@ -1719,8 +1719,18 @@ body {
   background: var(--surface2);
 }
 .ws-activity-user { font-weight: 600; color: var(--text); flex-shrink: 0; }
-.ws-activity-action { flex: 1; min-width: 0; }
+.ws-activity-action { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .ws-activity-time { flex-shrink: 0; font-family: var(--mono); font-size: 10px; color: var(--text3); }
+.ws-activity-check-label {
+  display: flex; align-items: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.ws-activity-check {
+  width: 15px; height: 15px; cursor: pointer;
+  accent-color: var(--accent);
+}
+.ws-activity-acknowledged { opacity: 0.55; }
+.ws-activity-ack { font-size: 10px; color: var(--text3); margin-top: 1px; }
 
 /* ── Billing ────────────────────────────────────────────────── */
 #ws-billing-info { display: flex; flex-direction: column; gap: 8px; }
@@ -2457,7 +2467,9 @@ body {
   align-items: center;
   justify-content: space-between;
 }
-.dash-cl-clear {
+.dash-cl-clear,
+.dash-activity-clear,
+.ws-activity-clear {
   background: none;
   border: none;
   color: var(--text3);
@@ -2469,7 +2481,12 @@ body {
   letter-spacing: 0.01em;
   padding: 2px 6px;
   border-radius: 4px;
-  transition: all 0.15s var(--ease);
+}
+.dash-cl-clear:hover,
+.dash-activity-clear:hover,
+.ws-activity-clear:hover {
+  color: var(--danger);
+  background: rgba(224,122,122,0.1);
 }
 .dash-cl-clear:hover {
   color: var(--danger);
@@ -2573,6 +2590,9 @@ body {
   overflow: hidden;
 }
 .dash-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 14px 16px 10px;
   font-size: 10px;
   font-weight: 600;
@@ -2598,6 +2618,8 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .dash-activity-item:last-child { border-bottom: none; }
+.dash-activity-acknowledged { opacity: 0.5; }
+.dash-activity-acknowledged .dash-activity-avatar { filter: saturate(0.3); }
 .dash-activity-avatar {
   width: 28px;
   height: 28px;
@@ -2838,33 +2860,68 @@ body {
 }
 
 .quickcheck-ai-ws-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: none;
-  margin-top: 4px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
 }
-.quickcheck-ai-ws-list {
+.quickcheck-ai-ws-picker.open { display: flex; }
+.quickcheck-ai-ws-modal {
+  background: var(--bg);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--surface2);
+  min-width: 280px;
+  max-width: 360px;
+  max-height: 60vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
-.quickcheck-ai-ws-item {
-  padding: 10px 14px; font-size: 13px; color: var(--text);
-  cursor: pointer; transition: background 120ms;
+.quickcheck-ai-ws-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border-light);
 }
-.quickcheck-ai-ws-item:last-child { border-bottom: none; }
+.quickcheck-ai-ws-modal-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.quickcheck-ai-ws-modal-close:hover { color: var(--text); }
+.quickcheck-ai-ws-list {
+  padding: 4px 0;
+}
+.quickcheck-ai-ws-item {
+  padding: 10px 16px; font-size: 13px; color: var(--text);
+  cursor: pointer; transition: background 120ms;
+}
 .quickcheck-ai-ws-item:hover { background: var(--surface1); }
 .quickcheck-ai-ws-empty {
-  color: var(--text3); cursor: default;
+  color: var(--text3); cursor: default; padding: 16px;
+  text-align: center;
 }
 .quickcheck-ai-ws-empty:hover { background: transparent; }
 .quickcheck-ai-ws-create {
   color: var(--accent); font-weight: 600;
+  border-top: 1px solid var(--border-light);
 }
 
 .quickcheck-ai-ws-create-form {
   display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 10px 14px;
+  padding: 12px 16px;
 }
 .quickcheck-ai-ws-name-input {
   flex: 1; min-width: 140px;

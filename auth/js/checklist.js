@@ -8,12 +8,14 @@ async function createBlankChecklist() {
   };
   if (DEV) console.log('[checklist] createBlankChecklist ws mode:', !!activeWorkspace, 'id:', cl.id);
   if (activeWorkspace) {
+    cl._workspace = true;
+    cl._workspaceId = activeWorkspace.id;
     sharedChecklists.unshift(cl);
   } else {
     checklists.unshift(cl);
   }
   renderSidebar();
-  loadChecklist(cl.id);
+  await loadChecklist(cl.id);
   setTimeout(() => startEditTitle(), 50);
   await persistChecklist(cl);
 }
@@ -21,7 +23,13 @@ async function createBlankChecklist() {
 function importChecklist() {
   if (!parsedData || !parsedData.sections.length) return;
   const cl = { id: uid(), title: parsedData.title, data: parsedData.sections };
-  checklists.unshift(cl);
+  if (activeWorkspace) {
+    cl._workspace = true;
+    cl._workspaceId = activeWorkspace.id;
+    sharedChecklists.unshift(cl);
+  } else {
+    checklists.unshift(cl);
+  }
   persistChecklist(cl);
   renderSidebar();
   closeModal('upload-modal');
@@ -308,15 +316,20 @@ function renderDashboardStats() {
 function renderDashboardActivity() {
   const feed = document.getElementById('dash-activity-feed');
   if (!feed) return;
+  const clearBtn = document.getElementById('dash-activity-clear');
+
+  const isOwner = (typeof workspaceMembers !== 'undefined' ? workspaceMembers : []).some(m => m.user_id === currentUser?.id && m.role === 'owner');
+  if (clearBtn) clearBtn.style.display = isOwner ? '' : 'none';
+
   if (workspaceActivity && workspaceActivity.length) {
-    const recent = workspaceActivity.slice(-20).reverse();
-    feed.innerHTML = recent.map(a => {
+    feed.innerHTML = workspaceActivity.slice(0, 20).map(a => {
       const initial = (a.user_name || '?')[0].toUpperCase();
-      const hue = a.user_id ? parseInt(a.user_id.charCodeAt(0) * 37, 10) % 360 : 200;
-      return `<div class="dash-activity-item">
-        <div class="dash-activity-avatar" style="background:hsl(${hue},50%,50%)">${initial}</div>
+      const color = avatarColorForUser(a.user_id, a.avatar_color);
+      const ackClass = a.acknowledged ? 'dash-activity-acknowledged' : '';
+      return `<div class="dash-activity-item ${ackClass}">
+        <div class="dash-activity-avatar" style="background:${color}">${initial}</div>
         <div class="dash-activity-text">
-          <strong>${esc(a.user_name || 'Someone')}</strong> ${esc(a.action || 'did something')}
+          <strong>${esc(a.user_name || 'Someone')}</strong> ${esc(formatAction(a.action, a.metadata, a.target_name) || a.action || 'did something')}
           <span class="dash-activity-time">${timeAgo(a.created_at)}</span>
         </div>
       </div>`;
@@ -384,10 +397,29 @@ function getActive() {
       || checklists.find(c => c.id === activeId);
 }
 
+async function logActivity(action, target) {
+  const wsId = activeWorkspace?.id;
+  if (!wsId || !sb) return;
+  try {
+    await sb.rpc('log_workspace_activity', {
+      p_workspace_id: wsId,
+      p_action: action,
+      p_target_name: target,
+    });
+    // Refresh the activity feed so the new entry shows immediately
+    if (typeof loadWorkspaceActivity === 'function') {
+      await loadWorkspaceActivity(wsId);
+    }
+    renderDashboardActivity();
+  } catch (e) { console.error('[checklist] logActivity error:', e); }
+}
+
 function toggleItem(si, ii, checked) {
   const cl = getActive(); if (!cl) return;
+  const label = cl.data[si]?.items[ii]?.label || '';
   cl.data[si].items[ii].checked = checked;
   persistChecklist(cl);
+  logActivity(checked ? 'item_checked' : 'item_unchecked', label);
   updateHeader(cl);
   renderSidebar();
 
@@ -482,6 +514,7 @@ function addItem(si) {
   const cl = getActive(); if (!cl) return;
   cl.data[si].items.push({ id: uid(), label: 'New item', checked: false });
   persistChecklist(cl);
+  logActivity('item_added', cl.data[si].items[cl.data[si].items.length - 1].label);
   renderSections(cl); updateHeader(cl); renderSidebar();
   const ii = cl.data[si].items.length - 1;
   setTimeout(() => startEditItem(si, ii), 30);
@@ -498,8 +531,10 @@ function addSection() {
 
 function deleteItem(si, ii) {
   const cl = getActive(); if (!cl) return;
+  const label = cl.data[si]?.items[ii]?.label || '';
   cl.data[si].items.splice(ii, 1);
   persistChecklist(cl);
+  logActivity('item_deleted', label);
   renderSections(cl); updateHeader(cl); renderSidebar();
 }
 
