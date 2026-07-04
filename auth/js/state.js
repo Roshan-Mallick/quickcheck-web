@@ -61,6 +61,31 @@ async function init() {
 
   const { data: { session } } = await sb.auth.getSession();
 
+  // Register auth listener early — before any early return — so it always
+  // captures SIGNED_IN/SIGNED_OUT events, even when an invite token is present.
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
+      if (token) {
+        window.pendingInviteToken = null;
+        sessionStorage.removeItem('quickcheck_invite_token');
+        await handleInviteToken(token);
+        return;
+      }
+      await enterApp();
+    }
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display  = 'none';
+      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
+      if (token) {
+        await handleInviteToken(token);
+      }
+    }
+  });
+
   // Check for workspace invite token in URL (path or query param)
   const inviteMatch = window.location.pathname.match(/\/auth\/invite\/(.+)/);
   const inviteParam = new URLSearchParams(window.location.search).get('invite');
@@ -91,29 +116,6 @@ async function init() {
     currentUser = session.user;
     await enterApp();
   }
-
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      currentUser = session.user;
-      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
-      if (token) {
-        window.pendingInviteToken = null;
-        sessionStorage.removeItem('quickcheck_invite_token');
-        await handleInviteToken(token);
-        return;
-      }
-      await enterApp();
-    }
-    if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      document.getElementById('auth-screen').style.display = 'flex';
-      document.getElementById('app-screen').style.display  = 'none';
-      const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
-      if (token) {
-        await handleInviteToken(token);
-      }
-    }
-  });
 }
 
 init();

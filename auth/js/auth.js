@@ -228,6 +228,13 @@ async function handleLoginSubmit(e) {
     }
 
     currentUser = data.user;
+    if (window.pendingInviteToken) {
+      const token = window.pendingInviteToken;
+      window.pendingInviteToken = null;
+      sessionStorage.removeItem('quickcheck_invite_token');
+      await handleInviteToken(token);
+      return;
+    }
     await enterApp();
 
   } catch (err) {

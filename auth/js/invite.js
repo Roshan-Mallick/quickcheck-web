@@ -13,11 +13,28 @@ function getInviteToken() {
 
 async function verifyInviteToken(token) {
   if (!sb) return null;
+  console.log('[invite] verifyInviteToken called with token:', token);
   const { data, error } = await sb.rpc('get_invite_by_token', { input_token: token });
+  console.log('[invite] RPC raw response:', { data, error });
+  console.log('[invite] data type:', typeof data, 'isArray:', Array.isArray(data));
   if (error) {
-    console.error('verifyInviteToken error:', error);
+    console.error('[invite] RPC error:', error);
     return null;
   }
+  if (!data) {
+    console.log('[invite] data is null/undefined');
+    return null;
+  }
+  if (Array.isArray(data)) {
+    console.log('[invite] data is array, length:', data.length);
+    if (data.length > 0) {
+      console.log('[invite] first element:', data[0]);
+      return data[0];
+    }
+    console.log('[invite] array empty');
+    return null;
+  }
+  console.log('[invite] data is single object:', data);
   return data;
 }
 
@@ -104,7 +121,8 @@ function showInviteCard(data) {
   document.getElementById('invite-role-name').textContent = formatRole(data.role);
   document.getElementById('invite-email-address').textContent = data.invited_email || '';
 
-  const expires = data.expires_at ? new Date(data.expires_at + 'Z') : null;
+  const hasTz = data.expires_at?.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(data.expires_at || '');
+  const expires = data.expires_at ? new Date(hasTz ? data.expires_at : data.expires_at + 'Z') : null;
   const expiresEl = document.getElementById('invite-expires');
   if (expires && expires > new Date()) {
     expiresEl.textContent = 'Expires ' + expires.toLocaleDateString();
