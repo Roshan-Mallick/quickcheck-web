@@ -4,6 +4,7 @@ let chatHistory = []
 let chatLoading = false
 let typingTimer = null
 let userScrolledUp = false
+let pendingImportContent = null
 
 function openAIChat() {
   const overlay = document.getElementById('quickcheck-ai-overlay')
@@ -104,7 +105,6 @@ function appendAssistantMessage(text, done) {
   div.id = 'ai-typing-msg'
   inner.appendChild(div)
 
-  hideChatActions()
   chatLoading = true
   setInputDisabled(true)
 
@@ -123,7 +123,7 @@ function appendAssistantMessage(text, done) {
       setInputDisabled(false)
       chatHistory.push({ role: 'assistant', content: text })
       if (done) {
-        const panel = buildChatActions()
+        const panel = buildChatActions(text)
         div.insertAdjacentElement('afterend', panel)
         setTimeout(() => { if (!userScrolledUp) scrollChatToBottom(scroller) }, 10)
       }
@@ -156,54 +156,79 @@ function hideChatLoading() {
 }
 
 function hideChatActions() {
-  const el = document.getElementById('quickcheck-ai-actions')
-  if (el) el.remove()
+  document.querySelectorAll('.quickcheck-ai-actions').forEach(el => el.remove())
 }
 
-function buildChatActions() {
+function buildChatActions(content) {
+  const normalized = normalizeMd(content)
   let heading = 'Checklist ready!'
-  const msgs = document.querySelectorAll('.quickcheck-ai-msg-assistant')
-  for (const m of msgs) {
-    const normalized = normalizeMd(m.textContent)
-    const match = normalized.match(/^#\s+(.+)/m)
-    if (match) heading = match[1].trim()
-  }
+  const match = normalized.match(/^#\s+(.+)/m)
+  if (match) heading = match[1].trim()
+
+  const dlSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+  const importSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M21 12l-9 5-9-5"/><path d="M21 17l-9 5-9-5"/></svg>'
+  const wsSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>'
 
   const panel = document.createElement('div')
   panel.className = 'quickcheck-ai-actions'
-  panel.id = 'quickcheck-ai-actions'
-  panel.innerHTML = `
-    <div class="quickcheck-ai-actions-title">${heading}</div>
-    <div class="quickcheck-ai-actions-buttons">
-      <button class="quickcheck-ai-action-btn" onclick="downloadAIChecklist()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download .md
-      </button>
-      <button class="quickcheck-ai-action-btn" onclick="importAIChecklist()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M21 12l-9 5-9-5"/><path d="M21 17l-9 5-9-5"/></svg>
-        Import to ${activeWorkspace ? activeWorkspace.name + ' Space' : 'Personal Space'}
-      </button>
-      <button class="quickcheck-ai-action-btn" onclick="toggleWorkspacePicker()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-        Import to Workspace...
-      </button>
-    </div>
-    <div class="quickcheck-ai-ws-picker" id="quickcheck-ai-ws-picker" onclick="if(event.target===this)closeWorkspacePicker()">
-      <div class="quickcheck-ai-ws-modal">
-        <div class="quickcheck-ai-ws-modal-header">
-          <span>Select workspace</span>
-          <button class="quickcheck-ai-ws-modal-close" onclick="closeWorkspacePicker()">&times;</button>
-        </div>
-        <div class="quickcheck-ai-ws-list" id="quickcheck-ai-ws-list"></div>
-      </div>
-    </div>
-  `
+
+  const titleDiv = document.createElement('div')
+  titleDiv.className = 'quickcheck-ai-actions-title'
+  titleDiv.textContent = heading
+  panel.appendChild(titleDiv)
+
+  const btnDiv = document.createElement('div')
+  btnDiv.className = 'quickcheck-ai-actions-buttons'
+  panel.appendChild(btnDiv)
+
+  const dlBtn = document.createElement('button')
+  dlBtn.className = 'quickcheck-ai-action-btn'
+  dlBtn.innerHTML = dlSvg + ' Download .md'
+  dlBtn.onclick = () => downloadAIChecklist(content)
+  btnDiv.appendChild(dlBtn)
+
+  const importBtn = document.createElement('button')
+  importBtn.className = 'quickcheck-ai-action-btn'
+  const importLabel = activeWorkspace ? activeWorkspace.name + ' Space' : 'Personal Space'
+  importBtn.innerHTML = importSvg + ' Import to ' + importLabel
+  importBtn.onclick = () => importAIChecklist(content)
+  btnDiv.appendChild(importBtn)
+
+  const wsBtn = document.createElement('button')
+  wsBtn.className = 'quickcheck-ai-action-btn'
+  wsBtn.innerHTML = wsSvg + ' Import to Workspace...'
+  wsBtn.onclick = () => {
+    pendingImportContent = content
+    const picker = getOrCreateWorkspacePicker()
+    picker.classList.add('open')
+    populateWorkspacePicker()
+  }
+  btnDiv.appendChild(wsBtn)
+
   return panel
 }
 
+function getOrCreateWorkspacePicker() {
+  let picker = document.getElementById('quickcheck-ai-ws-picker')
+  if (picker) return picker
+  picker = document.createElement('div')
+  picker.className = 'quickcheck-ai-ws-picker'
+  picker.id = 'quickcheck-ai-ws-picker'
+  picker.addEventListener('click', function (e) { if (e.target === this) closeWorkspacePicker() })
+  picker.innerHTML =
+    '<div class="quickcheck-ai-ws-modal">' +
+      '<div class="quickcheck-ai-ws-modal-header">' +
+        '<span>Select workspace</span>' +
+        '<button class="quickcheck-ai-ws-modal-close" onclick="closeWorkspacePicker()">&times;</button>' +
+      '</div>' +
+      '<div class="quickcheck-ai-ws-list" id="quickcheck-ai-ws-list"></div>' +
+    '</div>'
+  document.body.appendChild(picker)
+  return picker
+}
+
 function toggleWorkspacePicker() {
-  const picker = document.getElementById('quickcheck-ai-ws-picker')
-  if (!picker) return
+  const picker = getOrCreateWorkspacePicker()
   const shown = picker.classList.contains('open')
   picker.classList.toggle('open')
   if (!shown) populateWorkspacePicker()
@@ -343,11 +368,8 @@ function buildChecklistFromMd(md) {
   return { id: uid(), title, data: sections }
 }
 
-function importAIChecklist() {
-  const md = getChecklistMd()
-  if (!md) return
-
-  const cl = buildChecklistFromMd(md)
+function importAIChecklist(content) {
+  const cl = buildChecklistFromMd(content)
   if (!cl) return
 
   checklists.unshift(cl)
@@ -360,10 +382,14 @@ function importAIChecklist() {
 }
 
 async function importToWorkspace(wsId, wsName) {
-  const md = getChecklistMd()
-  if (!md) return
+  const content = pendingImportContent
+  pendingImportContent = null
+  if (!content) {
+    showToast('No content to import.', 'error')
+    return
+  }
 
-  const cl = buildChecklistFromMd(md)
+  const cl = buildChecklistFromMd(content)
   if (!cl) return
 
   if (!sb || !currentUser) {
@@ -386,17 +412,15 @@ async function importToWorkspace(wsId, wsName) {
     loadChecklist(cl.id)
   }
 
-  document.getElementById('quickcheck-ai-ws-picker').style.display = 'none'
+  closeWorkspacePicker()
   hideChatActions()
   showToast('Imported to ' + wsName + ' ✓', 'success')
   closeAIChat()
   resetChat()
 }
 
-function downloadAIChecklist() {
-  const md = getChecklistMd()
-  if (!md) return
-
+function downloadAIChecklist(content) {
+  const md = normalizeMd(content)
   const titleMatch = md.match(/^#\s+(.+)/m)
   const title = titleMatch ? titleMatch[1].trim() : 'checklist'
 
@@ -448,7 +472,9 @@ function resetChat() {
   chatHistory = []
   chatLoading = false
   userScrolledUp = false
+  pendingImportContent = null
   hideScrollToBottomBtn()
+  closeWorkspacePicker()
   setInputDisabled(false)
   stopTyping()
   document.getElementById('quickcheck-ai-messages-inner').innerHTML =
