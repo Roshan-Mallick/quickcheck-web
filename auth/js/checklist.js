@@ -69,8 +69,9 @@ function renderSidebar() {
     const item = document.createElement('div');
     item.className = 'list-item' + (cl.id === activeId ? ' active' : '');
     const trashSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>';
+    const tickSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4A017" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l3 3 5-5"/></svg>';
     item.innerHTML = `
-      <span class="list-item-icon">${activeWorkspace ? '🏢' : '☑'}</span>
+      <span class="list-item-icon">${tickSvg}</span>
       <span class="list-item-name">${esc(cl.title)}</span>
       <span class="list-item-count">${checked}/${total}</span>
       <button class="list-item-delete-btn" onclick="event.stopPropagation(); confirmDeleteSidebarItem('${cl.title.replace(/'/g, "\\'")}', '${cl.id}')" title="Delete checklist">${trashSvg}</button>

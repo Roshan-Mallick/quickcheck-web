@@ -3,6 +3,7 @@ const AI_FUNCTION_URL = SUPABASE_URL + '/functions/v1/generate-checklist'
 let chatHistory = []
 let chatLoading = false
 let typingTimer = null
+let userScrolledUp = false
 
 function openAIChat() {
   const overlay = document.getElementById('quickcheck-ai-overlay')
@@ -36,6 +37,52 @@ function stopTyping() {
   if (typingTimer) { clearTimeout(typingTimer); typingTimer = null }
   const el = document.getElementById('ai-typing-msg')
   if (el) el.id = ''
+  hideScrollToBottomBtn()
+}
+
+function onChatScroll() {
+  const scroller = document.getElementById('quickcheck-ai-messages')
+  if (!scroller) return
+  const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 30
+  if (atBottom) {
+    if (userScrolledUp) {
+      userScrolledUp = false
+      hideScrollToBottomBtn()
+    }
+  } else {
+    if (!userScrolledUp) {
+      userScrolledUp = true
+      if (chatLoading || typingTimer) showScrollToBottomBtn()
+    }
+  }
+}
+
+function scrollChatToBottom(el) {
+  el.scrollTop = el.scrollHeight
+}
+
+function jumpToBottom() {
+  const scroller = document.getElementById('quickcheck-ai-messages')
+  if (scroller) scroller.scrollTop = scroller.scrollHeight
+}
+
+function showScrollToBottomBtn() {
+  let btn = document.getElementById('ai-scroll-bottom-btn')
+  if (!btn) {
+    btn = document.createElement('button')
+    btn.id = 'ai-scroll-bottom-btn'
+    btn.className = 'ai-scroll-bottom-btn'
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>'
+    btn.onclick = jumpToBottom
+    const msgs = document.getElementById('quickcheck-ai-messages')
+    if (msgs) msgs.parentNode.appendChild(btn)
+  }
+  btn.classList.add('visible')
+}
+
+function hideScrollToBottomBtn() {
+  const btn = document.getElementById('ai-scroll-bottom-btn')
+  if (btn) btn.classList.remove('visible')
 }
 
 function appendMessage(role, content) {
@@ -45,7 +92,7 @@ function appendMessage(role, content) {
   div.className = 'quickcheck-ai-msg quickcheck-ai-msg-' + role
   div.textContent = content
   inner.appendChild(div)
-  scroller.scrollTop = scroller.scrollHeight
+  if (!userScrolledUp) scrollChatToBottom(scroller)
 }
 
 function appendAssistantMessage(text, done) {
@@ -67,7 +114,7 @@ function appendAssistantMessage(text, done) {
     if (i < text.length) {
       div.textContent += text[i]
       i++
-      scroller.scrollTop = scroller.scrollHeight
+      if (!userScrolledUp) scrollChatToBottom(scroller)
       typingTimer = setTimeout(step, 12)
     } else {
       typingTimer = null
@@ -78,7 +125,7 @@ function appendAssistantMessage(text, done) {
       if (done) {
         const panel = buildChatActions()
         div.insertAdjacentElement('afterend', panel)
-        setTimeout(() => { scroller.scrollTop = scroller.scrollHeight }, 10)
+        setTimeout(() => { if (!userScrolledUp) scrollChatToBottom(scroller) }, 10)
       }
     }
   }
@@ -100,7 +147,7 @@ function showChatLoading() {
   div.id = 'quickcheck-ai-loading-indicator'
   div.innerHTML = '<span class="ai-dot-pulse"><span></span><span></span><span></span></span>'
   inner.appendChild(div)
-  scroller.scrollTop = scroller.scrollHeight
+  if (!userScrolledUp) scrollChatToBottom(scroller)
 }
 
 function hideChatLoading() {
@@ -400,6 +447,8 @@ async function sendChatMessage() {
 function resetChat() {
   chatHistory = []
   chatLoading = false
+  userScrolledUp = false
+  hideScrollToBottomBtn()
   setInputDisabled(false)
   stopTyping()
   document.getElementById('quickcheck-ai-messages-inner').innerHTML =
@@ -414,3 +463,5 @@ document.getElementById('quickcheck-ai-input').addEventListener('keydown', funct
     sendChatMessage()
   }
 })
+
+document.getElementById('quickcheck-ai-messages').addEventListener('scroll', onChatScroll, { passive: true })
