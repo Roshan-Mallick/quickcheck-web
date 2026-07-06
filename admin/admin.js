@@ -1,4 +1,3 @@
-// ─── Admin Panel — Template Manager ───────────────────
 const { createClient } = supabase;
 
 const SUPABASE_URL  = 'https://gnzkwjzssumrnafqrmof.supabase.co';
@@ -8,70 +7,37 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: { detectSessionInUrl: true, flowType: 'pkce', persistSession: true }
 });
 
-let ADMIN_EMAIL    = null;
-let PENDING_EMAIL  = null;
-let templates      = [];
-let deleteId       = null;
-let pendingFile    = null; // { title, markdown }
-let _settingsUser  = null;
-let _pendingNewEmail   = null;
+let ADMIN_EMAIL   = null;
+let templates     = [];
+let deleteId      = null;
+let pendingFile   = null;
+let _settingsUser = null;
+let _pendingNewEmail = null;
 
-// ─── Debug helper ──────────────────────────────────────
 function logAuthState(label) {
   sb.auth.getUser().then(({ data }) => {
     console.log(`[auth] ${label}:`, {
       sessionEmail: data.user?.email,
-      sessionNewEmail: data.user?.new_email,
       adminConfigEmail: ADMIN_EMAIL,
-      pendingEmail: PENDING_EMAIL,
     });
   });
 }
 
-// ─── Load Admin Config from DB ─────────────────────────
 async function loadAdminConfig() {
   ADMIN_EMAIL = null;
-  PENDING_EMAIL = null;
   const { data, error } = await sb
     .from('admin_config')
-    .select('key, value');
+    .select('key, value')
+    .eq('key', 'admin_email');
   if (error) {
     console.error('[admin_config] load error:', error);
     return;
   }
-  if (!data) return;
-  data.forEach(row => {
-    if (row.key === 'admin_email') ADMIN_EMAIL = row.value;
-    if (row.key === 'pending_email') PENDING_EMAIL = row.value || null;
-  });
-  console.log('[admin_config] loaded:', { ADMIN_EMAIL, PENDING_EMAIL });
+  if (data && data.length > 0) {
+    ADMIN_EMAIL = data[0].value;
+  }
+  console.log('[admin_config] loaded:', { ADMIN_EMAIL });
 }
-
-// ─── Promote pending email to active ────────────────────
-async function promotePendingEmail(userEmail) {
-  if (!PENDING_EMAIL) return false;
-  // Update admin_email to the pending value, clear pending_email
-  // RLS allows this because user.email === pending_email
-  const { error: e1 } = await sb
-    .from('admin_config')
-    .update({ value: userEmail })
-    .eq('key', 'admin_email');
-  if (e1) { console.error('[promote] update admin_email failed:', e1); return false; }
-
-  const { error: e2 } = await sb
-    .from('admin_config')
-    .update({ value: '' })
-    .eq('key', 'pending_email');
-  if (e2) { console.error('[promote] clear pending_email failed:', e2); return false; }
-
-  ADMIN_EMAIL = userEmail;
-  PENDING_EMAIL = null;
-  console.log('[promote] email promoted:', userEmail);
-  return true;
-}
-
-// ─── Login (OTP-based) ─────────────────────────────────
-let _loginEmail = null;
 
 async function handleLogin(e) {
   e.preventDefault();
@@ -85,7 +51,6 @@ async function handleLogin(e) {
 
   await loadAdminConfig();
 
-  // Only allow login emails that match admin_email or previous_email
   if (ADMIN_EMAIL && email !== ADMIN_EMAIL) {
     errEl.textContent = 'Wrong email. Only the current admin email can log in.';
     errEl.style.display = 'block';
@@ -96,10 +61,7 @@ async function handleLogin(e) {
   btn.disabled = true;
   btn.textContent = 'Sending OTP…';
 
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false },
-  });
+  const { error } = await sb.auth.signInWithOtp({ email });
 
   btn.disabled = false;
   btn.textContent = 'Send OTP';
@@ -119,6 +81,8 @@ async function handleLogin(e) {
   errEl.textContent = 'OTP sent to ' + email + '.';
   errEl.style.display = 'block';
 }
+
+let _loginEmail = null;
 
 async function verifyLoginOtp() {
   const otp = document.getElementById('login-otp').value.trim();
@@ -142,22 +106,9 @@ async function verifyLoginOtp() {
     }
 
     await loadAdminConfig();
-    logAuthState('verifyLoginOtp');
 
     const user = data.user;
 
-    // If user just confirmed a new email, promote it
-    if (PENDING_EMAIL && user.email === PENDING_EMAIL) {
-      await promotePendingEmail(user.email);
-    }
-
-    // Clear stale pending_email if logged in as current admin
-    if (user.email === ADMIN_EMAIL && PENDING_EMAIL) {
-      await sb.from('admin_config').update({ value: '' }).eq('key', 'pending_email');
-      PENDING_EMAIL = null;
-    }
-
-    // Reject if admin_config doesn't match
     if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
       errEl.className = 'admin-error';
       errEl.textContent = 'Email mismatch. This account is not the current admin.';
@@ -187,10 +138,7 @@ function resendLoginOtp() {
   const errEl = document.getElementById('admin-login-error');
   btn.disabled = true;
   btn.textContent = 'Sending…';
-  sb.auth.signInWithOtp({
-    email: _loginEmail,
-    options: { shouldCreateUser: false },
-  }).then(() => {
+  sb.auth.signInWithOtp({ email: _loginEmail }).then(() => {
     btn.disabled = false;
     btn.textContent = 'Resend';
     errEl.className = 'admin-error admin-error-success';
@@ -205,7 +153,6 @@ function resendLoginOtp() {
   });
 }
 
-// ─── Recovery: reset admin_config via OTP ──────────────
 let _recoveryUser = null;
 
 async function sendRecoveryOtp() {
@@ -249,7 +196,6 @@ async function verifyRecoveryOtp() {
     document.getElementById('recovery-error').style.display = 'block';
     return;
   }
-  // Update admin_config — RLS recovery policy allows setting to own email
   const { error: adminErr } = await sb
     .from('admin_config')
     .update({ value: _recoveryUser.email })
@@ -260,10 +206,7 @@ async function verifyRecoveryOtp() {
     document.getElementById('recovery-error').style.display = 'block';
     return;
   }
-  await sb.from('admin_config').update({ value: '' }).eq('key', 'pending_email');
-  await sb.from('admin_config').update({ value: '' }).eq('key', 'pending_email');
   await loadAdminConfig();
-  // Clear OTP input for next use
   document.getElementById('recovery-otp').value = '';
   enterDashboard(_recoveryUser);
 }
@@ -281,7 +224,6 @@ function cancelRecovery() {
   document.getElementById('recovery-info').textContent = '';
 }
 
-// ─── Dashboard Entry ──────────────────────────────────
 function enterDashboard(user) {
   if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
     logAuthState('enterDashboard REJECTED');
@@ -304,7 +246,6 @@ function handleLogout() {
   document.getElementById('admin-email').value = '';
 }
 
-// ─── Load Templates ───────────────────────────────────
 async function loadTemplates() {
   const { data, error } = await sb
     .from('templates')
@@ -345,7 +286,6 @@ function renderTable() {
   }).join('');
 }
 
-// ─── Upload .md ────────────────────────────────────────
 function showUploadModal() {
   pendingFile = null;
   document.getElementById('admin-file-input').value = '';
@@ -399,7 +339,6 @@ async function confirmUpload() {
   loadTemplates();
 }
 
-// ─── Create / Edit ────────────────────────────────────
 function showCreateModal() {
   document.getElementById('edit-modal-title').textContent = 'Create Template';
   document.getElementById('edit-id').value = '';
@@ -455,7 +394,6 @@ async function handleSaveTemplate(e) {
   loadTemplates();
 }
 
-// ─── Delete ────────────────────────────────────────────
 function showDeleteModal(id) {
   const t = templates.find(x => x.id === id);
   if (!t) return;
@@ -474,7 +412,6 @@ async function confirmDelete() {
   loadTemplates();
 }
 
-// ─── Settings ──────────────────────────────────────────
 function openSettings() {
   const user = _settingsUser;
   if (!user) return;
@@ -500,7 +437,6 @@ function closeSettings() {
   _pendingNewEmail = null;
 }
 
-// ─── Settings — Change Email (two-step OTP) ──────────
 async function sendEmailOtp() {
   const user = _settingsUser;
   if (!user) return;
@@ -561,21 +497,17 @@ async function verifyEmailOtp() {
       await sb.auth.setSession(verifyData.session);
     }
 
-    // Step 1 verified: set pending_email and send OTP to current email again
-    await sb.from('admin_config').update({ value: _pendingNewEmail }).eq('key', 'pending_email');
-
     const { error: otp2Error } = await sb.auth.signInWithOtp({
       email: user.email,
       options: { shouldCreateUser: false },
     });
     if (otp2Error) throw otp2Error;
 
-    // Show step 2
     document.getElementById('settings-email-otp-group').style.display = 'none';
     document.getElementById('settings-email-confirm-group').style.display = 'block';
     document.getElementById('settings-email-confirm-otp').value = '';
     document.getElementById('settings-email-confirm-otp').focus();
-    showSettingsMsg('email', 'success', 'Step 2: Another OTP sent to your current email. Enter it to confirm the change.');
+    showSettingsMsg('email', 'success', 'Step 2: Another OTP sent to your current email. Enter it to finalize the change.');
 
     btn.disabled = false;
     btn.textContent = 'Verify';
@@ -595,7 +527,7 @@ async function confirmNewEmailOtp() {
 
   const btn = document.getElementById('settings-email-confirm-btn');
   btn.disabled = true;
-  btn.textContent = 'Confirming…';
+  btn.textContent = 'Updating…';
 
   try {
     const { data: verifyData, error } = await sb.auth.verifyOtp({
@@ -609,18 +541,24 @@ async function confirmNewEmailOtp() {
       await sb.auth.setSession(verifyData.session);
     }
 
-    // Both steps verified: finalize email change
-    await sb.from('admin_config').update({ value: _pendingNewEmail }).eq('key', 'admin_email');
-    await sb.from('admin_config').update({ value: '' }).eq('key', 'pending_email');
+    // Both steps verified — update auth.users.email AND admin_config directly
+    const { error: rpcError } = await sb.rpc('admin_update_auth_email', {
+      new_email: _pendingNewEmail,
+    });
+    if (rpcError) throw rpcError;
+
     await loadAdminConfig();
 
-    _settingsUser = verifyData.user;
+    _settingsUser = { ..._settingsUser, email: _pendingNewEmail };
     document.getElementById('admin-email-display').textContent = _pendingNewEmail;
     document.getElementById('settings-current-email').value = _pendingNewEmail;
 
+    const changedEmail = _pendingNewEmail;
+    _pendingNewEmail = null;
+    showSettingsMsg('email', 'success', 'Email changed to ' + changedEmail + '.');
+
     btn.disabled = false;
     btn.textContent = 'Confirm';
-    showSettingsMsg('email', 'success', 'Email changed to ' + _pendingNewEmail + '.');
     setTimeout(closeSettings, 1500);
 
   } catch (err) {
@@ -676,7 +614,6 @@ function showSettingsMsg(section, type, text) {
   setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
-// ─── Helpers ──────────────────────────────────────────
 function parseTitle(md) {
   const m = md.match(/^#\s+(.+)/m);
   return m ? m[1].trim() : '';
@@ -705,34 +642,18 @@ function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-
-// ─── Auto-login on page load if session exists ────────
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (!session?.user) return;
 
-  // Use getUser() for the up-to-date email from the Auth API,
-  // not the JWT claim which can be stale after an email change.
   const { data: { user } } = await sb.auth.getUser();
-  const currentEmail = user?.email;
-  if (!currentEmail) return;
+  if (!user?.email) return;
 
   await loadAdminConfig();
+
   logAuthState('auto-login');
 
-  // Promote if user just confirmed a new email
-  if (PENDING_EMAIL && currentEmail === PENDING_EMAIL) {
-    await promotePendingEmail(currentEmail);
-  }
-
-  // If logged in as the current admin, clear any stale pending_email
-  if (currentEmail === ADMIN_EMAIL && PENDING_EMAIL) {
-    await sb.from('admin_config').update({ value: '' }).eq('key', 'pending_email');
-    PENDING_EMAIL = null;
-  }
-
-  // If admin_config doesn't match, just bail — login screen will show
-  if (!ADMIN_EMAIL || currentEmail !== ADMIN_EMAIL) return;
+  if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) return;
 
   enterDashboard(user);
 })();

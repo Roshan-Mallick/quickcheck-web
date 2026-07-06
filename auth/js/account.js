@@ -123,6 +123,16 @@ function showAccountModal() {
   const emailInput = document.getElementById('account-email-input');
   if (emailInput) emailInput.value = '';
 
+  // Reset email-change OTP state
+  _pendingNewUserEmail = null;
+  document.getElementById('account-email-otp').value = '';
+  document.getElementById('email-change-otp-group').style.display = 'none';
+  document.getElementById('email-change-step1').style.display = 'block';
+  const emailBtn = document.getElementById('account-email-btn');
+  if (emailBtn) { emailBtn.style.display = 'flex'; emailBtn.disabled = false; emailBtn.textContent = 'Update email'; }
+  document.getElementById('account-email-verify-btn').style.display = 'none';
+  document.getElementById('email-change-hint').textContent = 'Enter a new email, then verify with a code sent to your current email.';
+
   const newPasswordInput = document.getElementById('account-new-password');
   if (newPasswordInput) newPasswordInput.value = '';
 
@@ -213,28 +223,121 @@ async function handleUpdateName(e) {
 
 // ─── Email ────────────────────────────────────────────────────────────────
 
+let _pendingNewUserEmail = null;
+
 async function handleChangeEmail(e) {
   e.preventDefault();
   if (!sb || !currentUser) return;
 
   const email = document.getElementById('account-email-input').value.trim();
   if (!email) { showAccountMsg('Please enter a new email.', 'error'); return; }
+  if (email === currentUser.email) { showAccountMsg('New email is the same as current.', 'error'); return; }
+
+  _pendingNewUserEmail = email;
 
   const btn = document.getElementById('account-email-btn');
   btn.disabled    = true;
-  btn.textContent = 'Sending…';
+  btn.textContent = 'Sending code…';
 
   try {
-    const { error } = await sb.auth.updateUser({ email });
+    const { error } = await sb.auth.signInWithOtp({
+      email: currentUser.email,
+      options: { shouldCreateUser: false },
+    });
     if (error) throw error;
-    showAccountMsg('Confirmation sent — check your new inbox (and spam folder).');
-    showToast('Email confirmation sent.');
+
+    document.getElementById('email-change-step1').style.display = 'none';
+    document.getElementById('email-change-otp-group').style.display = 'block';
+    document.getElementById('account-email-verify-btn').style.display = 'flex';
+    document.getElementById('account-email-btn').style.display = 'none';
+    document.getElementById('email-change-hint').textContent = 'A code was sent to your current email. Enter it below to verify and update your email.';
+
+    showAccountMsg('Verification code sent to your current email.', 'success');
   } catch (err) {
-    showAccountMsg(err.message || 'Failed to update email.', 'error');
-  } finally {
+    showAccountMsg(err.message || 'Failed to send code.', 'error');
     btn.disabled    = false;
     btn.textContent = 'Update email';
   }
+}
+
+async function verifyEmailChangeOtp() {
+  if (!sb || !currentUser || !_pendingNewUserEmail) return;
+
+  const otp = document.getElementById('account-email-otp').value.trim();
+  if (!otp) { showAccountMsg('Enter the verification code.', 'error'); return; }
+
+  const btn = document.getElementById('account-email-verify-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: verifyData, error } = await sb.auth.verifyOtp({
+      email: currentUser.email,
+      token: otp,
+      type: 'email',
+    });
+    if (error) throw error;
+
+    // OTP verified — update auth.users directly via RPC
+    const { error: rpcError } = await sb.rpc('update_my_email', {
+      new_email: _pendingNewUserEmail,
+    });
+    if (rpcError) throw rpcError;
+
+    const changedEmail = _pendingNewUserEmail;
+    _pendingNewUserEmail = null;
+
+    // Refresh session so the stored JWT and user object reflect the new email
+    const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+    if (!refreshError && refreshData?.user) {
+      currentUser = refreshData.user;
+    } else {
+      const { data: userData } = await sb.auth.getUser();
+      if (userData?.user) {
+        currentUser = userData.user;
+      } else {
+        currentUser = { ...currentUser, email: changedEmail };
+      }
+    }
+    updateUserDisplay();
+
+    document.getElementById('account-email-input').value = '';
+    document.getElementById('account-email-otp').value = '';
+    document.getElementById('email-change-otp-group').style.display = 'none';
+    document.getElementById('email-change-step1').style.display = 'block';
+    const emailBtn = document.getElementById('account-email-btn');
+    emailBtn.style.display = 'flex';
+    emailBtn.disabled = false;
+    emailBtn.textContent = 'Update email';
+    document.getElementById('account-email-verify-btn').style.display = 'none';
+    document.getElementById('email-change-hint').textContent = 'Enter a new email, then verify with a code sent to your current email.';
+    showAccountMsg('Email changed to ' + changedEmail + '.');
+    showToast('Email updated.');
+
+  } catch (err) {
+    showAccountMsg(err.message || 'Verification failed.', 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Verify & Change';
+  }
+}
+
+function resendEmailOtp() {
+  if (!sb || !currentUser) return;
+  const btn = document.getElementById('resend-email-otp-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  sb.auth.signInWithOtp({
+    email: currentUser.email,
+    options: { shouldCreateUser: false },
+  }).then(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+    showAccountMsg('Code resent to your current email.', 'success');
+  }).catch(() => {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  });
 }
 
 // ─── Password ─────────────────────────────────────────────────────────────
@@ -288,6 +391,17 @@ async function handleAccountPasswordReset() {
 
 async function handleDeleteAccount() {
   if (!sb || !currentUser) return;
+
+  // Check if this user is the admin — admin_config RLS only lets the admin read it
+  const { data: adminRows } = await sb
+    .from('admin_config')
+    .select('value')
+    .eq('key', 'admin_email');
+
+  if (adminRows && adminRows.length > 0 && adminRows[0].value === currentUser.email) {
+    showAccountMsg('This account is the admin and cannot be deleted via this dashboard. Go to the Admin Panel to transfer the admin role first.', 'error');
+    return;
+  }
 
   showConfirmModal({
     label: 'Delete account',
@@ -350,6 +464,16 @@ async function handleDeleteOtpSubmit(e) {
 
     btn.textContent = 'Deleting account…';
 
+    // Secondary guard — ensure this user is not the admin
+    const { data: adminRows } = await sb
+      .from('admin_config')
+      .select('value')
+      .eq('key', 'admin_email');
+
+    if (adminRows && adminRows.length > 0 && adminRows[0].value === currentUser.email) {
+      throw new Error('Cannot delete the admin account.');
+    }
+
     const { error: deleteError } = await sb.rpc('delete_my_account');
     if (deleteError) throw deleteError;
 
@@ -358,7 +482,7 @@ async function handleDeleteOtpSubmit(e) {
 
   } catch (err) {
     const msgEl = document.getElementById('delete-otp-msg');
-    msgEl.textContent = 'OTP is wrong, enter the correct one.';
+    msgEl.textContent = err.message || 'OTP is wrong, enter the correct one.';
     msgEl.className   = 'account-msg error';
     btn.disabled    = false;
     btn.textContent = 'Verify & Delete';

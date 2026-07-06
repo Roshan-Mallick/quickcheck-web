@@ -172,7 +172,7 @@
           <div id="settings-email-otp-group" class="admin-otp-group" style="display:none">
             <div class="admin-step-label">Step 1 — Verify it's you</div>
             <div class="admin-field">
-              <label>OTP sent to your current email</label>
+              <label>OTP sent to your current email (step 1 of 2)</label>
               <div class="admin-otp-row">
                 <input type="text" id="settings-email-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
                 <button class="admin-btn admin-btn-primary" id="settings-email-verify-btn" onclick="verifyEmailOtp()">Verify</button>
@@ -185,7 +185,7 @@
           <div id="settings-email-confirm-group" class="admin-otp-group" style="display:none">
             <div class="admin-step-label">Step 2 — Confirm email change</div>
             <div class="admin-field">
-              <label>Second OTP sent to your current email</label>
+              <label>Second OTP sent to your current email. A confirmation will then go to your new email.</label>
               <div class="admin-otp-row">
                 <input type="text" id="settings-email-confirm-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
                 <button class="admin-btn admin-btn-primary" id="settings-email-confirm-btn" onclick="confirmNewEmailOtp()">Confirm</button>
