@@ -52,7 +52,7 @@ async function handleLogin(e) {
 
   await loadAdminConfig();
 
-  if (ADMIN_EMAIL && email !== ADMIN_EMAIL) {
+  if (ADMIN_EMAIL && email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     errEl.textContent = 'Wrong email. Only the current admin email can log in.';
     errEl.style.display = 'block';
     return;
@@ -119,7 +119,7 @@ async function verifyLoginOtp() {
 
     const user = data.user;
 
-    if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
+    if (!ADMIN_EMAIL || user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       errEl.className = 'admin-error';
       errEl.textContent = 'Email mismatch. This account is not the current admin.';
       errEl.style.display = 'block';
@@ -268,7 +268,7 @@ function cancelRecovery() {
 }
 
 function enterDashboard(user) {
-  if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
+  if (!ADMIN_EMAIL || user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     logAuthState('enterDashboard REJECTED');
     sb.auth.signOut();
     document.getElementById('admin-login-error').textContent = 'Unauthorized email. Access denied.';
@@ -698,7 +698,7 @@ function closeModal(id) {
 
   logAuthState('auto-login');
 
-  if (!ADMIN_EMAIL || user.email !== ADMIN_EMAIL) return;
+  if (!ADMIN_EMAIL || user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
 
   enterDashboard(user);
 })();
