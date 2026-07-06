@@ -13,6 +13,7 @@ let deleteId      = null;
 let pendingFile   = null;
 let _settingsUser = null;
 let _pendingNewEmail = null;
+let _otpCooldownTimer = null;
 
 function logAuthState(label) {
   sb.auth.getUser().then(({ data }) => {
@@ -76,10 +77,19 @@ async function handleLogin(e) {
   document.getElementById('admin-login-btn').style.display = 'none';
   document.getElementById('login-otp-row').style.display = 'flex';
   document.getElementById('login-otp').value = '';
+  document.getElementById('login-otp').disabled = false;
   document.getElementById('login-otp').focus();
+  document.getElementById('login-otp-verify-btn').style.display = '';
+  document.getElementById('login-otp-verify-btn').disabled = false;
+  document.getElementById('login-otp-verify-btn').textContent = 'Verify';
   errEl.className = 'admin-error admin-error-success';
   errEl.textContent = 'OTP sent to ' + email + '.';
   errEl.style.display = 'block';
+
+  if (_otpCooldownTimer) clearInterval(_otpCooldownTimer);
+  _otpCooldownTimer = null;
+  document.getElementById('login-otp-resend-btn').textContent = 'Resend';
+  document.getElementById('login-otp-resend-btn').disabled = false;
 }
 
 let _loginEmail = null;
@@ -120,30 +130,63 @@ async function verifyLoginOtp() {
 
     enterDashboard(user);
 
-    btn.disabled = false;
-    btn.textContent = 'Verify';
-
   } catch (err) {
+    const msg = (err.message || '').toLowerCase();
     errEl.className = 'admin-error';
-    errEl.textContent = err.message;
+
+    if (msg.includes('expired') || msg.includes('otp_expired')) {
+      errEl.textContent = 'OTP has expired. Click "Resend" to get a new code.';
+      btn.style.display = 'none';
+      document.getElementById('login-otp').value = '';
+      document.getElementById('login-otp').disabled = true;
+    } else {
+      errEl.textContent = err.message;
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+    }
+
     errEl.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Verify';
   }
 }
 
 function resendLoginOtp() {
   if (!_loginEmail) return;
+  if (_otpCooldownTimer) return;
+
   const btn = document.getElementById('login-otp-resend-btn');
   const errEl = document.getElementById('admin-login-error');
+
   btn.disabled = true;
   btn.textContent = 'Sending…';
+
   sb.auth.signInWithOtp({ email: _loginEmail }).then(() => {
-    btn.disabled = false;
-    btn.textContent = 'Resend';
+    let cooldown = 60;
+    const verifyBtn = document.getElementById('login-otp-verify-btn');
+    const otpInput = document.getElementById('login-otp');
+
+    verifyBtn.style.display = '';
+    verifyBtn.disabled = false;
+    verifyBtn.textContent = 'Verify';
+    otpInput.disabled = false;
+    otpInput.value = '';
+    otpInput.focus();
+
     errEl.className = 'admin-error admin-error-success';
-    errEl.textContent = 'OTP resent to ' + _loginEmail + '.';
+    errEl.textContent = 'OTP sent to ' + _loginEmail + '. It expires in 60 seconds.';
     errEl.style.display = 'block';
+
+    if (_otpCooldownTimer) clearInterval(_otpCooldownTimer);
+    _otpCooldownTimer = setInterval(() => {
+      cooldown--;
+      btn.textContent = cooldown + 's';
+      btn.disabled = true;
+      if (cooldown <= 0) {
+        clearInterval(_otpCooldownTimer);
+        _otpCooldownTimer = null;
+        btn.textContent = 'Resend';
+        btn.disabled = false;
+      }
+    }, 1000);
   }).catch((err) => {
     btn.disabled = false;
     btn.textContent = 'Resend';
@@ -240,6 +283,8 @@ function enterDashboard(user) {
 }
 
 function handleLogout() {
+  if (_otpCooldownTimer) clearInterval(_otpCooldownTimer);
+  _otpCooldownTimer = null;
   sb.auth.signOut();
   document.getElementById('login-screen').style.display  = 'flex';
   document.getElementById('dashboard-screen').style.display = 'none';
