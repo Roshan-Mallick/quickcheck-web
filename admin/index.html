@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Quickcheck Templates</title>
+  <link rel="icon" type="image/png" href="../assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div id="admin-app">
+
+    <!-- ─── LOGIN SCREEN ──────────────────── -->
+    <div id="login-screen">
+      <div class="admin-login-card">
+        <div class="admin-login-logo">
+          <img src="../assets/logo.png" alt="" />
+          <span>Quickcheck</span>
+        </div>
+        <h1 class="admin-login-title">Template Admin</h1>
+        <p class="admin-login-sub">Enter your email to receive a one-time code.</p>
+        <div id="admin-login-error" class="admin-error"></div>
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="admin-field">
+            <label for="admin-email">Email</label>
+            <input type="email" id="admin-email" placeholder="admin@quickcheck.app" autocomplete="email" spellcheck="false" required />
+          </div>
+          <button type="submit" class="admin-btn admin-btn-primary" id="admin-login-btn">Send OTP</button>
+          <div id="login-otp-row" class="admin-otp-row" style="display:none;margin-top:12px">
+            <input type="text" id="login-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+            <button type="button" class="admin-btn admin-btn-primary" id="login-otp-verify-btn" onclick="verifyLoginOtp()">Verify</button>
+            <button type="button" class="admin-btn admin-btn-outline" id="login-otp-resend-btn" onclick="resendLoginOtp()">Resend</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- ─── DASHBOARD SCREEN ──────────────── -->
+    <div id="dashboard-screen" style="display:none">
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <img src="../assets/logo.png" alt="" class="admin-topbar-logo" />
+          <span class="admin-topbar-brand">Quickcheck · Template Admin</span>
+        </div>
+        <div class="admin-topbar-right">
+          <span class="admin-topbar-email" id="admin-email-display"></span>
+          <button class="admin-btn admin-btn-outline" onclick="openSettings()">Settings</button>
+          <button class="admin-btn admin-btn-outline" onclick="handleLogout()">Logout</button>
+        </div>
+      </header>
+
+      <main class="admin-main">
+        <div class="admin-header-row">
+          <h1 class="admin-page-title">Templates</h1>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-outline" onclick="showUploadModal()">Upload .md</button>
+            <button class="admin-btn admin-btn-primary" onclick="showCreateModal()">New Template</button>
+          </div>
+        </div>
+
+        <div id="admin-msg" class="admin-msg"></div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="templates-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="templates-tbody"></tbody>
+          </table>
+        </div>
+        <p id="admin-empty" class="admin-empty">No templates yet. Create one or upload a .md file.</p>
+      </main>
+    </div>
+
+    <!-- ─── UPLOAD MODAL ──────────────────── -->
+    <div class="admin-modal-overlay" id="upload-modal" style="display:none">
+      <div class="admin-modal">
+        <h2 class="admin-modal-title">Upload .md file</h2>
+        <p class="admin-modal-sub">Select a Markdown file. The title is parsed from the first <code>#</code> heading.</p>
+        <div class="admin-upload-zone" id="admin-upload-zone"
+             onclick="document.getElementById('admin-file-input').click()"
+             ondragover="event.preventDefault()"
+             ondrop="handleUploadDrop(event)">
+          <div class="admin-upload-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/></svg>
+          </div>
+          <div class="admin-upload-text">Drop your .md file here or click to browse</div>
+        </div>
+        <input type="file" id="admin-file-input" accept=".md,.markdown,text/markdown" style="display:none" onchange="handleUploadFile(this)" />
+        <div id="admin-upload-preview" class="admin-upload-preview"></div>
+        <div class="admin-modal-actions">
+          <button class="admin-btn admin-btn-outline" onclick="closeModal('upload-modal')">Cancel</button>
+          <button class="admin-btn admin-btn-primary" id="admin-upload-confirm" style="display:none" onclick="confirmUpload()">Upload</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CREATE / EDIT MODAL ───────────── -->
+    <div class="admin-modal-overlay" id="edit-modal" style="display:none">
+      <div class="admin-modal admin-modal-wide">
+        <h2 class="admin-modal-title" id="edit-modal-title">Create Template</h2>
+        <form onsubmit="handleSaveTemplate(event)">
+          <input type="hidden" id="edit-id" />
+          <div class="admin-field">
+            <label for="edit-title">Title</label>
+            <input type="text" id="edit-title" placeholder="e.g. Production Deployment Checklist" required />
+          </div>
+          <div class="admin-field">
+            <label for="edit-description">Description</label>
+            <input type="text" id="edit-description" placeholder="Brief description of this template" />
+          </div>
+          <div class="admin-field">
+            <label for="edit-category">Category</label>
+            <input type="text" id="edit-category" placeholder="e.g. Deployment, Incident, Release" />
+          </div>
+          <div class="admin-field">
+            <label for="edit-markdown">Markdown</label>
+            <textarea id="edit-markdown" rows="12" placeholder="# Title&#10;## Section&#10;- [ ] Item" required></textarea>
+          </div>
+          <div class="admin-modal-actions">
+            <button type="button" class="admin-btn admin-btn-outline" onclick="closeModal('edit-modal')">Cancel</button>
+            <button type="submit" class="admin-btn admin-btn-primary" id="edit-save-btn">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ─── DELETE CONFIRM ────────────────── -->
+    <div class="admin-modal-overlay" id="delete-modal" style="display:none">
+      <div class="admin-modal">
+        <h2 class="admin-modal-title">Delete Template</h2>
+        <p>Are you sure you want to delete <strong id="delete-title"></strong>?</p>
+        <p class="admin-modal-sub">This action cannot be undone.</p>
+        <div class="admin-modal-actions">
+          <button class="admin-btn admin-btn-outline" onclick="closeModal('delete-modal')">Cancel</button>
+          <button class="admin-btn admin-btn-danger" id="delete-confirm-btn" onclick="confirmDelete()">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS MODAL ─────────────────── -->
+    <div class="admin-modal-overlay" id="settings-modal" style="display:none">
+      <div class="admin-modal admin-modal-wide">
+        <div class="admin-settings-header">
+          <h2 class="admin-modal-title">Settings</h2>
+          <button class="admin-btn admin-btn-outline" onclick="closeSettings()">Close</button>
+        </div>
+
+        <div class="admin-settings-section">
+          <h3 class="admin-settings-section-title">Email</h3>
+          <div class="admin-field">
+            <label>Current Email</label>
+            <input type="email" id="settings-current-email" class="admin-input-readonly" readonly />
+          </div>
+          <div class="admin-field">
+            <label>New Email</label>
+            <input type="email" id="settings-new-email" placeholder="new@email.com" />
+          </div>
+
+          <!-- Step 1: OTP to current email -->
+          <div id="settings-email-otp-group" class="admin-otp-group" style="display:none">
+            <div class="admin-step-label">Step 1 — Verify it's you</div>
+            <div class="admin-field">
+              <label>OTP sent to your current email</label>
+              <div class="admin-otp-row">
+                <input type="text" id="settings-email-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+                <button class="admin-btn admin-btn-primary" id="settings-email-verify-btn" onclick="verifyEmailOtp()">Verify</button>
+                <button class="admin-btn admin-btn-outline" id="settings-email-resend-btn" onclick="resendEmailOtp()">Resend</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Another OTP to current email -->
+          <div id="settings-email-confirm-group" class="admin-otp-group" style="display:none">
+            <div class="admin-step-label">Step 2 — Confirm email change</div>
+            <div class="admin-field">
+              <label>Second OTP sent to your current email</label>
+              <div class="admin-otp-row">
+                <input type="text" id="settings-email-confirm-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+                <button class="admin-btn admin-btn-primary" id="settings-email-confirm-btn" onclick="confirmNewEmailOtp()">Confirm</button>
+                <button class="admin-btn admin-btn-outline" id="settings-email-confirm-resend-btn" onclick="resendNewEmailOtp()">Resend</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="admin-btn admin-btn-primary" id="settings-email-send-btn" onclick="sendEmailOtp()">Update Email</button>
+          <div id="settings-email-msg" class="admin-msg"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

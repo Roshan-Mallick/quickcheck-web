@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates — Quickcheck</title>
+  <link rel="icon" type="image/png" href="../assets/logo.png">
+  <meta name="description" content="Browse ready-to-use checklist templates for deployment, incident response, release, and more.">
+  <meta name="theme-color" content="#050505">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .template-page > .container {
+      max-width: 1100px;
+      margin-inline: auto;
+      padding-top: 100px;
+      padding-bottom: 80px;
+    }
+
+    .template-hero {
+      margin-bottom: var(--space-10);
+    }
+
+    .template-hero h1 {
+      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.2;
+      margin: 0 0 var(--space-3);
+      color: var(--text);
+      font-family: var(--font-heading);
+    }
+
+    .template-hero p {
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 60ch;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .template-controls {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: var(--space-8);
+    }
+
+    .template-search {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .template-search:focus { border-color: var(--accent); }
+    .template-search::placeholder { color: var(--muted-2); }
+
+    .template-cat-filter {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .template-cat-btn {
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: .8rem;
+      font-weight: 500;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .template-cat-btn:hover { border-color: var(--accent); color: var(--text); }
+    .template-cat-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-2); }
+
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .template-card {
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .template-card-header {
+      margin-bottom: var(--space-3);
+    }
+
+    .template-card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 0 0 var(--space-1);
+      color: var(--text);
+      font-family: var(--font-heading);
+      line-height: 1.3;
+    }
+
+    .template-card-desc {
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 var(--space-3);
+      flex: 1;
+    }
+
+    .template-card-category {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: .75rem;
+      font-weight: 500;
+      background: var(--accent-dim);
+      color: var(--accent-2);
+      border: 1px solid var(--border);
+      margin-bottom: var(--space-3);
+    }
+
+    .template-card-actions {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: auto;
+    }
+
+    .template-card-actions .btn-primary,
+    .template-card-actions .btn-secondary {
+      flex: 1;
+      text-align: center;
+      padding: .65rem 1rem;
+      font-size: .85rem;
+    }
+
+    .template-empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--muted);
+      grid-column: 1 / -1;
+    }
+
+    .template-loading {
+      text-align: center;
+      padding: 64px;
+      color: var(--muted);
+      grid-column: 1 / -1;
+    }
+
+    .template-loading .spinner {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--border-light);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Preview Modal ──────────────────────── */
+    .preview-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    .preview-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .preview-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+      font-family: var(--font-heading);
+    }
+
+    .preview-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color .2s;
+    }
+    .preview-close:hover { color: var(--text); }
+
+    .preview-body {
+      padding: 24px;
+      overflow-y: auto;
+      font-size: .9rem;
+      line-height: 1.7;
+    }
+
+    .preview-body h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 var(--space-4); font-family: var(--font-heading); }
+    .preview-body h2 { font-size: 1.1rem; font-weight: 600; margin: var(--space-5) 0 var(--space-2); font-family: var(--font-heading); color: var(--accent-2); }
+    .preview-body h3 { font-size: 1rem; font-weight: 600; margin: var(--space-4) 0 var(--space-2); }
+    .preview-body p { margin: 0 0 var(--space-3); }
+    .preview-body ul, .preview-body ol { padding-left: 20px; margin: 0 0 var(--space-3); }
+    .preview-body li { margin-bottom: 4px; }
+    .preview-body strong { font-weight: 600; }
+    .preview-body code {
+      font-family: var(--font-mono);
+      background: var(--surface-3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: .8rem;
+    }
+    .preview-body pre {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 0 0 var(--space-3);
+    }
+    .preview-body pre code {
+      background: none;
+      padding: 0;
+    }
+    .preview-body hr { border: none; border-top: 1px solid var(--border-light); margin: var(--space-5) 0; }
+    .preview-body input[type="checkbox"] { margin-right: 6px; }
+
+    .preview-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .template-page > .container { padding-top: 80px; padding-bottom: 60px; }
+      .template-grid { grid-template-columns: 1fr; }
+      .template-controls { flex-direction: column; align-items: stretch; }
+      .template-cat-filter { justify-content: center; }
+      .preview-modal { max-height: 90vh; }
+    }
+
+    @media (max-width: 480px) {
+      .template-page > .container { padding-top: 60px; padding-bottom: 40px; }
+      .template-hero h1 { font-size: clamp(1.35rem, 5vw, 1.75rem); }
+      .template-hero p { font-size: .925rem; }
+      .template-card { padding: var(--space-4); }
+    }
+  </style>
+</head>
+<body class="template-page">
+
+  <nav class="nav" aria-label="Primary navigation">
+    <a href="../index.html" class="nav-logo">
+      <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+      <span class="nav-logo-text">Quickcheck</span>
+    </a>
+    <ul class="nav-links">
+      <li class="nav-link-item"><a href="../index.html#capabilities">Features</a></li>
+      <li class="nav-link-item"><a href="../index.html#pricing">Pricing</a></li>
+      <li class="nav-link-item"><a href="docs.html">Docs</a></li>
+      <li class="nav-link-item"><a href="changelog.html">Changelog</a></li>
+      <li class="nav-link-item"><a href="template.html" aria-current="page">Template</a></li>
+    </ul>
+    <div class="nav-cta-group">
+      <a href="../auth/index.html" class="nav-cta-secondary">Log In</a>
+      <a href="../auth/index.html?view=register" class="nav-cta">Sign Up</a>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <div class="template-hero">
+      <h1>Checklist Templates</h1>
+      <p>Browse ready-to-use templates for deployments, incident response, releases, and more.</p>
+    </div>
+
+    <div class="template-controls">
+      <input type="text" class="template-search" id="template-search" placeholder="Search templates…" autocomplete="off" spellcheck="false" oninput="filterTemplates()" />
+      <div class="template-cat-filter" id="template-cat-filter"></div>
+    </div>
+
+    <div class="template-grid" id="template-grid">
+      <div class="template-loading">
+        <div class="spinner"></div>
+        Loading templates…
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Preview Modal ──────────────────── -->
+  <div id="preview-overlay" class="preview-overlay" style="display:none">
+    <div class="preview-modal">
+      <div class="preview-header">
+        <h2 id="preview-title">Template</h2>
+        <button class="preview-close" onclick="closePreview()" aria-label="Close preview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="preview-body" id="preview-body"></div>
+      <div class="preview-footer">
+        <button class="btn-primary" onclick="downloadFromPreview()">Download</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="../index.html" class="nav-logo">
+            <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+            <span class="nav-logo-text">Quickcheck</span>
+          </a>
+          <p>Persistent checklists for engineering teams.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="../index.html#capabilities">Features</a></li>
+            <li><a href="../index.html#pricing">Pricing</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="docs.html">Documentation</a></li>
+            <li><a href="ai-checklist-generator.html">Quick-AI</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="../legal/privacy.html">Privacy</a></li>
+            <li><a href="../legal/terms.html">Terms</a></li>
+            <li><a href="../legal/security.html">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Quickcheck. <a href="../LICENSE">MIT License</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="footer-mobile">
+    <div class="container">
+      <div class="fm-brand">
+        <a href="../index.html" class="nav-logo">
+          <img src="../assets/logo.png" alt="Quickcheck Logo" class="nav-logo-icon">
+          <span class="nav-logo-text">Quickcheck</span>
+        </a>
+        <p>Persistent checklists for engineering teams.</p>
+      </div>
+      <div class="fm-accordion">
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="true">
+            Product
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content is-open">
+            <ul>
+              <li><a href="../index.html#capabilities">Features</a></li>
+              <li><a href="../index.html#pricing">Pricing</a></li>
+              <li><a href="changelog.html">Changelog</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="false">
+            Resources
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content">
+            <ul>
+              <li><a href="docs.html">Documentation</a></li>
+              <li><a href="ai-checklist-generator.html">Quick-AI</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="fm-group">
+          <button class="fm-trigger" aria-expanded="false">
+            Legal
+            <svg class="fm-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>
+          </button>
+          <div class="fm-content">
+            <ul>
+              <li><a href="../legal/privacy.html">Privacy</a></li>
+              <li><a href="../legal/terms.html">Terms</a></li>
+              <li><a href="../legal/security.html">Security</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="fm-bottom">
+        <p>&copy; 2026 Quickcheck. <a href="../LICENSE">MIT License</a>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div id="bg-gradients" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <script>
+    // ─── Config ─────────────────────────────────────
+    const SUPABASE_URL  = 'https://gnzkwjzssumrnafqrmof.supabase.co';
+    const SUPABASE_ANON = 'sb_publishable_4O8Oegbf4JCx1nynZiHPlA_N41BvOpR';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    let allTemplates = [];
+    let previewId    = null;
+    let activeCat    = 'all';
+
+    // ─── Init ───────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadTemplates();
+      setupNavScroll();
+      setupFooterAccordion();
+    });
+
+    async function loadTemplates() {
+      const grid = document.getElementById('template-grid');
+      grid.innerHTML = '<div class="template-loading"><div class="spinner"></div>Loading templates…</div>';
+
+      const { data, error } = await sb
+        .from('templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        grid.innerHTML = '<div class="template-empty">Failed to load templates. Please try again later.</div>';
+        return;
+      }
+
+      allTemplates = data || [];
+      buildCategoryFilter();
+      renderTemplates();
+    }
+
+    // ─── Category Filter ────────────────────────────
+    function buildCategoryFilter() {
+      const cats = [...new Set(allTemplates.map(t => t.category).filter(Boolean))];
+      const container = document.getElementById('template-cat-filter');
+      container.innerHTML = `<button class="template-cat-btn active" data-cat="all" onclick="setCategory('all')">All</button>` +
+        cats.map(c => `<button class="template-cat-btn" data-cat="${esc(c)}" onclick="setCategory('${esc(c)}')">${esc(c)}</button>`).join('');
+    }
+
+    function setCategory(cat) {
+      activeCat = cat;
+      document.querySelectorAll('.template-cat-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === cat);
+      });
+      filterTemplates();
+    }
+
+    // ─── Search + Filter ────────────────────────────
+    function filterTemplates() {
+      const q = document.getElementById('template-search').value.toLowerCase().trim();
+      const filtered = allTemplates.filter(t => {
+        if (activeCat !== 'all' && t.category !== activeCat) return false;
+        if (q && !t.title.toLowerCase().includes(q) && !(t.description || '').toLowerCase().includes(q)) return false;
+        return true;
+      });
+      renderTemplates(filtered);
+    }
+
+    // ─── Render ─────────────────────────────────────
+    function renderTemplates(list) {
+      const items = list || allTemplates;
+      const grid  = document.getElementById('template-grid');
+
+      if (items.length === 0) {
+        grid.innerHTML = '<div class="template-empty">No templates found.</div>';
+        return;
+      }
+
+      grid.innerHTML = items.map(t => `
+        <article class="template-card glass-card">
+          <div class="template-card-header">
+            <h3 class="template-card-title">${esc(t.title)}</h3>
+          </div>
+          ${t.category ? `<span class="template-card-category">${esc(t.category)}</span>` : ''}
+          ${t.description ? `<p class="template-card-desc">${esc(t.description)}</p>` : ''}
+          <div class="template-card-actions">
+            <button class="btn-secondary" onclick="openPreview('${t.id}')">Preview</button>
+            <button class="btn-primary" onclick="downloadTemplate('${t.id}')">Download</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // ─── Preview ────────────────────────────────────
+    function mdToHtml(md) {
+      let html = md
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/^- \[ \] (.+)$/gm, '<label><input type="checkbox" disabled /> $1</label>')
+        .replace(/^- \[x\] (.+)$/gim, '<label><input type="checkbox" checked disabled /> $1</label>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li>$1. $2</li>')
+        .replace(/^```([\s\S]*?)```$/gm, '<pre><code>$1</code></pre>')
+        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+        .replace(/^---$/gm, '<hr>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+
+      html = html.replace(/<li>.*?<\/li>/g, match => {
+        return match;
+      });
+
+      // Wrap consecutive <li> in <ul>
+      html = html.replace(/((?:<li>.*?<\/li>\s*)+)/g, '<ul>$1</ul>');
+
+      return '<p>' + html + '</p>';
+    }
+
+    function openPreview(id) {
+      const t = allTemplates.find(x => x.id === id);
+      if (!t) return;
+      previewId = id;
+      document.getElementById('preview-title').textContent = t.title;
+      document.getElementById('preview-body').innerHTML = mdToHtml(t.markdown);
+      document.getElementById('preview-overlay').style.display = 'flex';
+    }
+
+    function closePreview() {
+      document.getElementById('preview-overlay').style.display = 'none';
+      previewId = null;
+    }
+
+    // Click outside modal to close
+    document.getElementById('preview-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closePreview();
+    });
+
+    function downloadFromPreview() {
+      if (previewId) downloadTemplate(previewId);
+    }
+
+    // ─── Download Template ──────────────────────────
+    function downloadTemplate(id) {
+      const t = allTemplates.find(x => x.id === id);
+      if (!t) return;
+      const blob = new Blob([t.markdown], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (t.title || 'template').replace(/[^a-zA-Z0-9_-]/g, '_') + '.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // ─── Helpers ────────────────────────────────────
+    function esc(s) {
+      if (!s) return '';
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // ─── Nav Scroll ─────────────────────────────────
+    function setupNavScroll() {
+      const nav = document.querySelector('.nav');
+      if (!nav) return;
+      const SCROLL_THRESHOLD = 60;
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            nav.classList.toggle('scrolled', window.scrollY > SCROLL_THRESHOLD);
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+    }
+
+    // ─── Footer Accordion ───────────────────────────
+    function setupFooterAccordion() {
+      const accordion = document.querySelector('.fm-accordion');
+      if (!accordion) return;
+      accordion.addEventListener('click', (e) => {
+        const trigger = e.target.closest('.fm-trigger');
+        if (!trigger) return;
+        const group = trigger.closest('.fm-group');
+        if (!group) return;
+        const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+        accordion.querySelectorAll('.fm-group').forEach(g => {
+          const btn = g.querySelector('.fm-trigger');
+          const panel = g.querySelector('.fm-content');
+          if (btn) btn.setAttribute('aria-expanded', 'false');
+          if (panel) panel.classList.remove('is-open');
+        });
+        if (!isExpanded) {
+          trigger.setAttribute('aria-expanded', 'true');
+          const content = trigger.nextElementSibling;
+          if (content && content.classList.contains('fm-content')) {
+            content.classList.add('is-open');
+          }
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
