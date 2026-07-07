@@ -579,6 +579,23 @@ async function verifyEmailOtp() {
     console.log('[admin-email] RPC result:', { success: !rpcError, error: rpcError });
     if (rpcError) throw rpcError;
 
+    // Refresh the session so the JWT gets the new email claim.
+    // Without this, all subsequent REST requests (templates, admin_config)
+    // will fail RLS because auth.jwt() ->> 'email' still has the old value.
+    console.log('[admin-email] refreshing session to pick up new email claim…');
+    const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+    if (refreshError) {
+      console.error('[admin-email] session refresh failed:', refreshError);
+      // Non-fatal — try getUser as fallback
+      const { data: userData } = await sb.auth.getUser();
+      if (userData?.user) {
+        _settingsUser = userData.user;
+      }
+    } else if (refreshData?.user) {
+      _settingsUser = refreshData.user;
+      console.log('[admin-email] session refreshed, new email:', _settingsUser.email);
+    }
+
     await loadAdminConfig();
 
     _settingsUser = { ..._settingsUser, email: _pendingNewEmail };
