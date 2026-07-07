@@ -697,8 +697,8 @@ async function startTotpSetup() {
         text: data.otpauth_url,
         width: 200,
         height: 200,
-        colorDark: '#e8dcc8',
-        colorLight: '#1a1826',
+        colorDark: '#111111',
+        colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M,
       });
     } else {
@@ -835,6 +835,8 @@ async function disableTotp() {
 
 // ─── Password ─────────────────────────────────────────────────────────────
 
+let _pendingNewPassword = null;
+
 async function handleChangePassword(e) {
   e.preventDefault();
   if (!sb || !currentUser) return;
@@ -845,38 +847,80 @@ async function handleChangePassword(e) {
   if (pw.length < 8)  { showAccountMsg('Password must be at least 8 characters.', 'error'); return; }
   if (pw !== confirm) { showAccountMsg('Passwords do not match.', 'error'); return; }
 
+  _pendingNewPassword = pw;
+
   const btn = document.getElementById('account-password-btn');
   btn.disabled    = true;
-  btn.textContent = 'Updating…';
+  btn.textContent = 'Sending code…';
 
   try {
-    const { error } = await sb.auth.updateUser({ password: pw });
+    const { error } = await sb.auth.signInWithOtp({
+      email: currentUser.email,
+      options: { shouldCreateUser: false },
+    });
     if (error) throw error;
-    document.getElementById('account-new-password').value    = '';
-    document.getElementById('account-confirm-password').value = '';
-    showAccountMsg('Password updated successfully.');
-    showToast('Password changed.');
+
+    document.getElementById('password-change-step1').style.display = 'none';
+    document.getElementById('password-change-otp-group').style.display = 'block';
+    document.getElementById('password-change-otp-msg').style.display = 'none';
+    document.getElementById('account-password-otp').value = '';
+    document.getElementById('account-password-otp').focus();
+
+    showAccountMsg('Verification code sent to your email.', 'success');
   } catch (err) {
-    showAccountMsg(err.message || 'Failed to change password.', 'error');
+    _pendingNewPassword = null;
+    showAccountMsg(err.message || 'Failed to send code.', 'error');
   } finally {
     btn.disabled    = false;
     btn.textContent = 'Change password';
   }
 }
 
-async function handleAccountPasswordReset() {
-  if (!sb || !currentUser?.email) return;
-  clearAccountMsg();
+async function verifyPasswordChangeOtp() {
+  if (!sb || !currentUser || !_pendingNewPassword) return;
+
+  const otp = document.getElementById('account-password-otp').value.trim();
+  if (!otp) { showAccountMsg('Enter the verification code.', 'error'); return; }
+
+  const btn = document.getElementById('account-password-otp-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Verifying…';
+
   try {
-    const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, {
-      redirectTo: AUTH_REDIRECT(),
+    const { error } = await sb.auth.verifyOtp({
+      email: currentUser.email,
+      token: otp,
+      type: 'email',
     });
     if (error) throw error;
-    showAccountMsg('Reset link sent to ' + currentUser.email);
-    showToast('Password reset email sent.');
+
+    const { error: updateError } = await sb.auth.updateUser({ password: _pendingNewPassword });
+    if (updateError) throw updateError;
+
+    _pendingNewPassword = null;
+    document.getElementById('account-new-password').value    = '';
+    document.getElementById('account-confirm-password').value = '';
+    document.getElementById('account-password-otp').value     = '';
+    document.getElementById('password-change-otp-group').style.display = 'none';
+    document.getElementById('password-change-step1').style.display = 'block';
+    showAccountMsg('Password updated successfully.');
+    showToast('Password changed.');
   } catch (err) {
-    showAccountMsg(err.message || 'Failed to send reset link.', 'error');
+    document.getElementById('password-change-otp-msg').textContent = err.message || 'Failed to change password.';
+    document.getElementById('password-change-otp-msg').className = 'account-msg error';
+    document.getElementById('password-change-otp-msg').style.display = 'block';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Verify & Change';
   }
+}
+
+function cancelPasswordChange() {
+  _pendingNewPassword = null;
+  document.getElementById('account-password-otp').value = '';
+  document.getElementById('password-change-otp-msg').style.display = 'none';
+  document.getElementById('password-change-otp-group').style.display = 'none';
+  document.getElementById('password-change-step1').style.display = 'block';
 }
 
 // ─── Invite (workspace-level only) ────────────────────────────────────────

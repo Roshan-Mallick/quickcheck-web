@@ -657,7 +657,7 @@
               <label for="account-name-input">Display name</label>
               <input type="text" id="account-name-input" placeholder="Your name" autocomplete="name" spellcheck="false"/>
             </div>
-            <button type="submit" class="btn-primary account-save-btn" id="account-name-btn">Save name</button>
+            <button type="submit" class="btn-primary account-save-btn" id="account-name-btn" style="margin-top:12px;">Save name</button>
           </form>
 
           <div class="account-field" style="margin-top: 24px;">
@@ -681,8 +681,8 @@
               <button type="button" class="btn-link" id="resend-email-otp-btn" onclick="resendEmailOtp()" style="font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;text-decoration:underline">Resend code</button>
             </div>
             <p class="account-hint" id="email-change-hint">Enter a new email, then verify with a code sent to your current email.</p>
-            <button type="submit" class="btn-primary account-save-btn" id="account-email-btn">Update email</button>
-            <button type="button" class="btn-primary account-save-btn" id="account-email-verify-btn" style="display:none" onclick="verifyEmailChangeOtp()">Verify &amp; Change</button>
+            <button type="submit" class="btn-primary account-save-btn" id="account-email-btn" style="margin-top:12px;">Update email</button>
+            <button type="button" class="btn-primary account-save-btn" id="account-email-verify-btn" style="display:none;margin-top:12px;" onclick="verifyEmailChangeOtp()">Verify &amp; Change</button>
           </form>
 
           <!-- ─── Recovery Email ───────────────────────────────── -->
@@ -733,29 +733,42 @@
         <div class="account-section" id="account-sec-password">
           <div class="account-section-title">Password</div>
           <form class="account-form" onsubmit="handleChangePassword(event)">
-            <div class="account-field">
-              <label for="account-new-password">New password</label>
-              <div class="auth-pass-wrap">
-                <input type="password" id="account-new-password" placeholder="••••••••••" autocomplete="new-password" spellcheck="false" minlength="8" />
-                <button type="button" class="auth-pass-toggle" onclick="togglePassword('account-new-password', this)" aria-label="Show password">
-                  <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                </button>
+            <div id="password-change-step1">
+              <div class="account-field">
+                <label for="account-new-password">New password</label>
+                <div class="auth-pass-wrap">
+                  <input type="password" id="account-new-password" placeholder="••••••••••" autocomplete="new-password" spellcheck="false" minlength="8" />
+                  <button type="button" class="auth-pass-toggle" onclick="togglePassword('account-new-password', this)" aria-label="Show password">
+                    <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="account-field">
+                <label for="account-confirm-password">Confirm password</label>
+                <div class="auth-pass-wrap">
+                  <input type="password" id="account-confirm-password" placeholder="••••••••••" autocomplete="new-password" spellcheck="false" minlength="8" />
+                  <button type="button" class="auth-pass-toggle" onclick="togglePassword('account-confirm-password', this)" aria-label="Show password">
+                    <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <button type="submit" class="btn-primary account-save-btn" id="account-password-btn">Change password</button>
               </div>
             </div>
-            <div class="account-field">
-              <label for="account-confirm-password">Confirm password</label>
-              <div class="auth-pass-wrap">
-                <input type="password" id="account-confirm-password" placeholder="••••••••••" autocomplete="new-password" spellcheck="false" minlength="8" />
-                <button type="button" class="auth-pass-toggle" onclick="togglePassword('account-confirm-password', this)" aria-label="Show password">
-                  <svg class="icon-eye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <svg class="icon-eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                </button>
+            <div id="password-change-otp-group" style="display:none;">
+              <p class="account-hint" style="margin-bottom:12px;">A verification code was sent to your email. Enter it below to confirm the password change.</p>
+              <div class="account-field">
+                <label for="account-password-otp">Enter verification code</label>
+                <input type="text" id="account-password-otp" class="otp-input" placeholder="00000000" maxlength="8" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*"/>
               </div>
-            </div>
-            <div class="account-password-actions">
-              <button type="submit" class="btn-primary account-save-btn" id="account-password-btn">Change password</button>
-              <button type="button" class="btn-outline account-alt-btn" onclick="handleAccountPasswordReset()">Send reset link instead</button>
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button type="button" class="btn-primary account-save-btn" id="account-password-otp-btn" onclick="verifyPasswordChangeOtp()">Verify &amp; Change</button>
+                <button type="button" class="btn-cancel" onclick="cancelPasswordChange()">Cancel</button>
+              </div>
+              <div id="password-change-otp-msg" class="account-msg" style="margin-top:12px;"></div>
             </div>
           </form>
         </div>
@@ -773,8 +786,13 @@
           <!-- Setup step 1: show QR -->
           <div id="totp-setup-qr" style="display:none">
             <p class="account-hint" style="margin-bottom:8px;">Scan this QR code with your authenticator app, then enter the 6-digit code below.</p>
-            <div id="totp-qr-code" style="margin-bottom:12px;padding:12px;background:#16141c;border-radius:8px;display:inline-block;"></div>
-            <style>#totp-qr-code canvas, #totp-qr-code img { image-rendering:pixelated; border-radius:4px; }</style>
+            <div id="totp-qr-wrapper" style="margin-bottom:12px;padding:16px;background:#fff;border-radius:12px;display:inline-block;box-shadow:0 2px 16px rgba(0,0,0,0.3);position:relative;">
+              <div id="totp-qr-code" style="display:flex;justify-content:center;"></div>
+              <div id="totp-qr-logo" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+                <img src="/assets/logo.png" alt="" style="width:32px;height:32px;object-fit:contain;" />
+              </div>
+            </div>
+            <style>#totp-qr-code canvas, #totp-qr-code img { image-rendering:pixelated; border-radius:4px; display:block; }</style>
             <div class="account-field" style="margin-top:8px;">
               <label for="totp-setup-token">Enter 6-digit code from app</label>
               <input type="text" id="totp-setup-token" class="otp-input" placeholder="000000" maxlength="6" autocomplete="off" inputmode="numeric" pattern="[0-9]*" style="max-width:180px;"/>
