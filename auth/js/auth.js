@@ -252,7 +252,11 @@ async function handleLoginSubmit(e) {
     }
 
     // Check if TOTP 2FA is enabled
-    const { data: totpEnabled } = await sb.rpc('has_totp_enabled').catch(() => ({ data: false }));
+    let totpEnabled = false;
+    try {
+      const { data } = await sb.rpc('has_totp_enabled');
+      totpEnabled = !!data;
+    } catch {}
     if (totpEnabled) {
       // Skip TOTP if device was trusted within the last 30 days
       const trusted = localStorage.getItem('quickcheck_totp_trusted');
