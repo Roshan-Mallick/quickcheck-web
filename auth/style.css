@@ -1073,6 +1073,17 @@ body {
 .modal-label { font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 6px; }
 .modal-title { font-size: clamp(18px, 3vw, 22px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
 .modal-sub { font-size: 14px; color: var(--text2); margin-bottom: 22px; line-height: 1.6; }
+.modal-description { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+.modal-close-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; background: transparent;
+  color: var(--text3); font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s; line-height: 1;
+}
+.modal-close-btn:hover { background: var(--surface2); color: var(--text); }
+.modal { position: relative; }
 
 /* account modal header (mobile only — desktop uses the sidebar nav) */
 .account-modal-header { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
@@ -1097,7 +1108,47 @@ body {
 }
 
 .account-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
-.account-form { display: flex; flex-direction: column; gap: 12px; }
+
+/* ─── TOTP 2FA styles ────────────────────────────────────────────── */
+.totp-status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; padding: 4px 10px;
+  border-radius: 999px; margin-bottom: 12px;
+}
+.totp-status-badge.enabled  { background: #132b1a; color: #4ade80; }
+.totp-status-badge.disabled { background: #2a1a1a; color: #f87171; }
+
+.totp-setup-box {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.totp-qr-container {
+  display: flex; justify-content: center; padding: 12px;
+  background: #fff; border-radius: var(--radius);
+  width: fit-content; margin: 0 auto;
+}
+.totp-qr-container canvas, .totp-qr-container img {
+  display: block; image-rendering: pixelated;
+}
+.totp-backup-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px; margin: 8px 0;
+}
+.totp-backup-code {
+  font-family: var(--mono); font-size: 13px;
+  background: var(--surface2); padding: 8px 12px;
+  border-radius: var(--radius); border: 1px solid var(--border2);
+  text-align: center; letter-spacing: 1px;
+  user-select: all; cursor: text;
+}
+.totp-backup-warn {
+  font-size: 12px; color: var(--text3); line-height: 1.5;
+  padding: 8px 12px; background: var(--surface2);
+  border-radius: var(--radius); border: 1px solid var(--border2);
+}
+
+/* ─── Account form (continued) ────────────────────────────────────── */
 .account-field label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
 .account-field input {
   width: 100%; background: var(--surface2); border: 1px solid var(--border2);

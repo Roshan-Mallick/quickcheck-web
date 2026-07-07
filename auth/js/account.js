@@ -152,6 +152,10 @@ function showAccountModal() {
   applyAvatarColor(getAvatarColor(currentUser));
   renderAvatarColors();
 
+  // Load recovery email status
+  loadRecoveryEmailStatus();
+  loadTotpStatus();
+
   // Always open on Profile
   showAccountSection('profile');
 
@@ -160,7 +164,7 @@ function showAccountModal() {
 }
 
 function showAccountSection(section) {
-  const sections = ['profile', 'email', 'password', 'plan', 'danger'];
+  const sections = ['profile', 'email', 'password', 'security', 'plan', 'danger'];
   const isMobile = window.innerWidth <= 640;
 
   // On mobile: show all sections stacked (scrollable). On desktop: show only the selected one.
@@ -338,6 +342,495 @@ function resendEmailOtp() {
     btn.disabled = false;
     btn.textContent = 'Resend code';
   });
+}
+
+// ─── Recovery Email ───────────────────────────────────────────────────────
+
+let _recoveryFlowState = null; // 'add-step1' | 'add-step2' | 'remove-step1' | 'remove-step2' | 'update-step1' | 'update-step2'
+let _recoveryFlowEmail = null;
+let _recoveryNewEmail = null;
+
+function maskEmail(email) {
+  if (!email) return '';
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const masked = local[0] + '***';
+  return masked + '@' + domain;
+}
+
+function showRecoveryFlowMsg(type, text) {
+  const el = document.getElementById('recovery-flow-msg');
+  el.className = 'account-msg ' + type;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function hideRecoveryFlowMsg() {
+  const el = document.getElementById('recovery-flow-msg');
+  el.style.display = 'none';
+}
+
+function resetRecoveryFlowUI() {
+  _recoveryFlowState = null;
+  _recoveryFlowEmail = null;
+  _recoveryNewEmail = null;
+  document.getElementById('recovery-flow').style.display = 'none';
+  document.getElementById('recovery-flow-info').textContent = '';
+  document.getElementById('recovery-flow-new-email-group').style.display = 'none';
+  document.getElementById('recovery-flow-new-email').value = '';
+  document.getElementById('recovery-flow-otp-group').style.display = 'none';
+  document.getElementById('recovery-flow-otp').value = '';
+  document.getElementById('recovery-flow-action-btn').style.display = '';
+  hideRecoveryFlowMsg();
+}
+
+async function loadRecoveryEmailStatus() {
+  if (!sb || !currentUser) return;
+  try {
+    const { data: hasEmail } = await sb.rpc('has_recovery_email');
+    const setDiv = document.getElementById('recovery-email-set');
+    const notSetDiv = document.getElementById('recovery-email-not-set');
+    if (hasEmail) {
+      const { data: email } = await sb.rpc('get_recovery_email');
+      document.getElementById('recovery-email-display').textContent = maskEmail(email);
+      setDiv.style.display = 'block';
+      notSetDiv.style.display = 'none';
+    } else {
+      setDiv.style.display = 'none';
+      notSetDiv.style.display = 'block';
+    }
+    resetRecoveryFlowUI();
+  } catch (err) {
+    console.error('[recovery] load error:', err);
+  }
+}
+
+function showAddRecoveryFlow() {
+  resetRecoveryFlowUI();
+  _recoveryFlowState = 'add-step1';
+  document.getElementById('recovery-flow').style.display = 'block';
+  document.getElementById('recovery-flow-info').textContent = 'Enter a recovery email, then verify with a code sent to your primary email.';
+  document.getElementById('recovery-flow-new-email-group').style.display = 'block';
+  document.getElementById('recovery-flow-action-btn').textContent = 'Send Code';
+  document.getElementById('recovery-flow-new-email').focus();
+}
+
+function showRemoveRecoveryFlow() {
+  resetRecoveryFlowUI();
+  _recoveryFlowState = 'remove-step1';
+  document.getElementById('recovery-flow').style.display = 'block';
+  document.getElementById('recovery-flow-info').textContent = 'A code will be sent to your primary email to authorize removal.';
+  document.getElementById('recovery-flow-action-btn').textContent = 'Send Code';
+}
+
+function showUpdateRecoveryFlow() {
+  resetRecoveryFlowUI();
+  _recoveryFlowState = 'update-step1';
+  document.getElementById('recovery-flow').style.display = 'block';
+  document.getElementById('recovery-flow-info').textContent = 'A code will be sent to your primary email to authorize the update.';
+  document.getElementById('recovery-flow-action-btn').textContent = 'Send Code';
+}
+
+async function resendRecoveryFlowOtp() {
+  if (!_recoveryFlowEmail) return;
+  const btn = document.getElementById('recovery-flow-resend-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    await sb.auth.signInWithOtp({
+      email: _recoveryFlowEmail,
+      options: { shouldCreateUser: false },
+    });
+    showRecoveryFlowMsg('success', 'Code resent to ' + maskEmail(_recoveryFlowEmail) + '.');
+  } catch (err) {
+    showRecoveryFlowMsg('error', err.message || 'Failed to resend.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Resend code';
+  }
+}
+
+async function recoveryFlowAction() {
+  const state = _recoveryFlowState;
+  if (!state) return;
+
+  const actionBtn = document.getElementById('recovery-flow-action-btn');
+
+  try {
+    switch (state) {
+
+      // ── Add: send OTP to primary ──────────────────────────────
+      case 'add-step1': {
+        const newEmail = document.getElementById('recovery-flow-new-email').value.trim();
+        if (!newEmail || !newEmail.includes('@')) {
+          showRecoveryFlowMsg('error', 'Enter a valid email address.');
+          return;
+        }
+        _recoveryNewEmail = newEmail;
+        _recoveryFlowEmail = currentUser.email;
+
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Sending…';
+
+        const { error } = await sb.auth.signInWithOtp({
+          email: currentUser.email,
+          options: { shouldCreateUser: false },
+        });
+        if (error) throw error;
+
+        _recoveryFlowState = 'add-step2';
+        document.getElementById('recovery-flow-new-email-group').style.display = 'none';
+        document.getElementById('recovery-flow-otp-group').style.display = 'block';
+        document.getElementById('recovery-flow-info').textContent = 'A code was sent to your primary email (' + maskEmail(currentUser.email) + '). Enter it below.';
+        actionBtn.textContent = 'Verify & Add';
+        actionBtn.disabled = false;
+        document.getElementById('recovery-flow-otp').focus();
+        showRecoveryFlowMsg('success', 'Code sent to your primary email.');
+        break;
+      }
+
+      // ── Add: verify OTP and save ──────────────────────────────
+      case 'add-step2': {
+        const otp = document.getElementById('recovery-flow-otp').value.trim();
+        if (!otp) { showRecoveryFlowMsg('error', 'Enter the verification code.'); return; }
+
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Verifying…';
+
+        const { error: otpError } = await sb.auth.verifyOtp({
+          email: currentUser.email,
+          token: otp,
+          type: 'email',
+        });
+        if (otpError) throw otpError;
+
+        const { error: rpcError } = await sb.rpc('add_recovery_email', {
+          new_email: _recoveryNewEmail,
+        });
+        if (rpcError) throw rpcError;
+
+        showRecoveryFlowMsg('success', 'Recovery email added: ' + maskEmail(_recoveryNewEmail) + '.');
+        actionBtn.style.display = 'none';
+        document.getElementById('recovery-flow-otp-group').style.display = 'none';
+        document.getElementById('recovery-flow-info').textContent = '';
+        setTimeout(() => { resetRecoveryFlowUI(); loadRecoveryEmailStatus(); }, 1500);
+        break;
+      }
+
+      // ── Remove step 1: send OTP to primary email ──────────────
+      case 'remove-step1': {
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Sending…';
+
+        const { error } = await sb.auth.signInWithOtp({
+          email: currentUser.email,
+          options: { shouldCreateUser: false },
+        });
+        if (error) throw error;
+
+        _recoveryFlowState = 'remove-step2';
+        document.getElementById('recovery-flow-otp-group').style.display = 'block';
+        document.getElementById('recovery-flow-info').textContent = 'A code was sent to your primary email (' + maskEmail(currentUser.email) + '). Enter it below.';
+        actionBtn.textContent = 'Verify & Remove';
+        actionBtn.disabled = false;
+        document.getElementById('recovery-flow-otp').focus();
+        showRecoveryFlowMsg('success', 'Code sent to your primary email.');
+        break;
+      }
+
+      // ── Remove step 2: verify OTP to primary, then delete ────────────────
+      case 'remove-step2': {
+        const otp = document.getElementById('recovery-flow-otp').value.trim();
+        if (!otp) { showRecoveryFlowMsg('error', 'Enter the verification code.'); return; }
+
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Verifying…';
+
+        const { error: otpError } = await sb.auth.verifyOtp({
+          email: currentUser.email,
+          token: otp,
+          type: 'email',
+        });
+        if (otpError) throw otpError;
+
+        const { error: rpcError } = await sb.rpc('remove_recovery_email');
+        if (rpcError) throw rpcError;
+
+        showRecoveryFlowMsg('success', 'Recovery email removed.');
+        actionBtn.style.display = 'none';
+        document.getElementById('recovery-flow-otp-group').style.display = 'none';
+        document.getElementById('recovery-flow-info').textContent = '';
+        setTimeout(() => { resetRecoveryFlowUI(); loadRecoveryEmailStatus(); }, 1500);
+        break;
+      }
+
+      // ── Update step 1: send OTP to primary email ──────────────
+      case 'update-step1': {
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Sending…';
+
+        const { error } = await sb.auth.signInWithOtp({
+          email: currentUser.email,
+          options: { shouldCreateUser: false },
+        });
+        if (error) throw error;
+
+        _recoveryFlowState = 'update-step2';
+        document.getElementById('recovery-flow-otp-group').style.display = 'block';
+        document.getElementById('recovery-flow-new-email-group').style.display = 'block';
+        document.getElementById('recovery-flow-new-email').value = '';
+        document.getElementById('recovery-flow-info').textContent = 'A code was sent to your primary email (' + maskEmail(currentUser.email) + '). Enter a new recovery email and the code below.';
+        actionBtn.textContent = 'Verify & Update';
+        actionBtn.disabled = false;
+        document.getElementById('recovery-flow-new-email').focus();
+        showRecoveryFlowMsg('success', 'Code sent to your primary email.');
+        break;
+      }
+
+      // ── Update step 2: verify OTP to primary, add new recovery email ────
+      case 'update-step2': {
+        const newEmail = document.getElementById('recovery-flow-new-email').value.trim();
+        if (!newEmail || !newEmail.includes('@')) {
+          showRecoveryFlowMsg('error', 'Enter a valid new recovery email.');
+          return;
+        }
+        const otp = document.getElementById('recovery-flow-otp').value.trim();
+        if (!otp) { showRecoveryFlowMsg('error', 'Enter the verification code.'); return; }
+
+        actionBtn.disabled = true;
+        actionBtn.textContent = 'Verifying…';
+
+        const { error: otpError } = await sb.auth.verifyOtp({
+          email: currentUser.email,
+          token: otp,
+          type: 'email',
+        });
+        if (otpError) throw otpError;
+
+        const { error: rpcError } = await sb.rpc('add_recovery_email', {
+          new_email: newEmail,
+        });
+        if (rpcError) throw rpcError;
+
+        showRecoveryFlowMsg('success', 'Recovery email updated to ' + maskEmail(newEmail) + '.');
+        actionBtn.style.display = 'none';
+        document.getElementById('recovery-flow-otp-group').style.display = 'none';
+        document.getElementById('recovery-flow-new-email-group').style.display = 'none';
+        document.getElementById('recovery-flow-info').textContent = '';
+        setTimeout(() => { resetRecoveryFlowUI(); loadRecoveryEmailStatus(); }, 1500);
+        break;
+      }
+    }
+  } catch (err) {
+    showRecoveryFlowMsg('error', err.message || 'Something went wrong.');
+    actionBtn.disabled = false;
+    actionBtn.textContent = 'Retry';
+  }
+}
+
+function cancelRecoveryFlow() {
+  resetRecoveryFlowUI();
+  loadRecoveryEmailStatus();
+}
+
+// ─── TOTP 2FA ─────────────────────────────────────────────────────────────
+
+let _totpSetupSecret = null;
+let _totpSetupOtpAuthUrl = null;
+
+function totpShowMsg(type, text) {
+  const el = document.getElementById('totp-setup-msg');
+  el.className = 'account-msg ' + type;
+  el.textContent = text;
+  el.style.display = 'block';
+}
+
+function totpHideMsg() {
+  const el = document.getElementById('totp-setup-msg');
+  el.style.display = 'none';
+}
+
+async function loadTotpStatus() {
+  if (!sb || !currentUser) return;
+  try {
+    const { data: enabled } = await sb.rpc('has_totp_enabled');
+    document.getElementById('totp-disabled').style.display = enabled ? 'none' : 'block';
+    document.getElementById('totp-enabled').style.display = enabled ? 'block' : 'none';
+    document.getElementById('totp-setup-qr').style.display = 'none';
+    document.getElementById('totp-backup-codes').style.display = 'none';
+    document.getElementById('totp-disable-confirm').style.display = 'none';
+
+    if (enabled) {
+      const { data: remaining } = await sb.rpc('remaining_backup_codes');
+      document.getElementById('totp-backup-count').textContent = remaining;
+    }
+  } catch (err) {
+    console.error('[totp] load error:', err);
+  }
+}
+
+async function startTotpSetup() {
+  _totpSetupSecret = null;
+  _totpSetupOtpAuthUrl = null;
+  document.getElementById('totp-setup-token').value = '';
+  totpHideMsg();
+
+  const btn = document.getElementById('totp-enable-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const { data, error } = await sb.rpc('generate_totp_secret');
+    if (error) throw error;
+
+    _totpSetupSecret = data.secret;
+    _totpSetupOtpAuthUrl = data.otpauth_url;
+
+    document.getElementById('totp-disabled').style.display = 'none';
+    document.getElementById('totp-setup-qr').style.display = 'block';
+
+    // Render QR code
+    const qrContainer = document.getElementById('totp-qr-code');
+    qrContainer.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrContainer, {
+        text: data.otpauth_url,
+        width: 200,
+        height: 200,
+        colorDark: '#e8dcc8',
+        colorLight: '#1a1826',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+    } else {
+      qrContainer.innerHTML = '<p class="account-hint">QR code library not loaded. Use the manual key below.</p>';
+    }
+
+    document.getElementById('totp-setup-token').focus();
+  } catch (err) {
+    totpShowMsg('error', err.message || 'Failed to generate TOTP secret.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enable Two-Factor Authentication';
+  }
+}
+
+function cancelTotpSetup() {
+  _totpSetupSecret = null;
+  _totpSetupOtpAuthUrl = null;
+  document.getElementById('totp-setup-qr').style.display = 'none';
+  document.getElementById('totp-disabled').style.display = 'block';
+  document.getElementById('totp-setup-token').value = '';
+  totpHideMsg();
+}
+
+async function confirmTotpSetup() {
+  if (!_totpSetupSecret) return;
+
+  const token = document.getElementById('totp-setup-token').value.trim();
+  if (!token || token.length !== 6) {
+    totpShowMsg('error', 'Enter the 6-digit code from your authenticator app.');
+    return;
+  }
+
+  const btn = document.getElementById('totp-setup-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  totpHideMsg();
+
+  try {
+    const { data, error } = await sb.rpc('confirm_totp_setup', {
+      secret_base32: _totpSetupSecret,
+      token: token,
+    });
+    if (error) throw error;
+
+    // Show backup codes
+    const backupCodes = data || [];
+    const grid = document.getElementById('totp-backup-grid');
+    grid.innerHTML = backupCodes.map(c =>
+      '<code class="totp-backup-code">' + c + '</code>'
+    ).join('');
+
+    document.getElementById('totp-setup-qr').style.display = 'none';
+    document.getElementById('totp-backup-codes').style.display = 'block';
+    _totpSetupSecret = null;
+    _totpSetupOtpAuthUrl = null;
+
+    showToast('Two-factor authentication enabled.');
+  } catch (err) {
+    totpShowMsg('error', err.message || 'Verification failed.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify & Enable';
+  }
+}
+
+function showBackupCodes() {
+  document.getElementById('totp-backup-codes').style.display = 'block';
+}
+
+function closeBackupCodes() {
+  document.getElementById('totp-backup-codes').style.display = 'none';
+  loadTotpStatus();
+}
+
+function showDisableTotpConfirm() {
+  document.getElementById('totp-disable-token').value = '';
+  document.getElementById('totp-disable-msg').style.display = 'none';
+  document.getElementById('totp-enabled').style.display = 'none';
+  document.getElementById('totp-disable-confirm').style.display = 'block';
+  document.getElementById('totp-disable-token').focus();
+}
+
+function cancelDisableTotp() {
+  document.getElementById('totp-disable-token').value = '';
+  document.getElementById('totp-disable-confirm').style.display = 'none';
+  loadTotpStatus();
+}
+
+async function disableTotp() {
+  const msgEl = document.getElementById('totp-disable-msg');
+  msgEl.className = 'account-msg error';
+  msgEl.textContent = '';
+  msgEl.style.display = 'none';
+
+  const token = document.getElementById('totp-disable-token').value.trim();
+  if (!token || token.length !== 6) {
+    msgEl.textContent = 'Enter your 6-digit code.';
+    msgEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.querySelector('#totp-disable-confirm .btn-danger-outline');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: valid, error } = await sb.rpc('verify_totp_token', { token });
+    if (error) throw error;
+
+    if (!valid) {
+      msgEl.textContent = 'Invalid code. Try again.';
+      msgEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify & Disable 2FA';
+      return;
+    }
+
+    const { error: disableError } = await sb.rpc('disable_totp');
+    if (disableError) throw disableError;
+
+    document.getElementById('totp-disable-token').value = '';
+    localStorage.removeItem('quickcheck_totp_trusted');
+    showToast('Two-factor authentication disabled.');
+    loadTotpStatus();
+  } catch (err) {
+    msgEl.textContent = err.message || 'Failed to disable.';
+    msgEl.className = 'account-msg error';
+    msgEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Verify & Disable 2FA';
+  }
 }
 
 // ─── Password ─────────────────────────────────────────────────────────────
@@ -575,6 +1068,23 @@ function updateAccountPlanDisplay() {
 // Called after a successful sign-in or session restore.
 
 async function enterApp() {
+  // ── Admin emails cannot use the QuickCheck dashboard ──────────────
+  if (currentUser?.email) {
+    let isAdmin = false;
+    try {
+      const { data } = await sb.rpc('is_admin_email', { check_email: currentUser.email });
+      isAdmin = !!data;
+    } catch {}
+    if (isAdmin) {
+      await sb.auth.signOut();
+      currentUser = null;
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display  = 'none';
+      showAuthError('This email is registered as an admin. Please use the Admin Panel instead.');
+      return;
+    }
+  }
+
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display  = 'block';
   updateUserDisplay();

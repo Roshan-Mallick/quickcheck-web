@@ -26,6 +26,10 @@ let visitedChecklists = []; // [{ id, title, total, checked, lastVisitedAt }]
 // Universal cache of ALL checklists (personal + all workspaces) for cross-context search
 let universalChecklists = []; // [{ id, title, data, _workspace, _workspaceId }]
 
+// TOTP 2FA — prevents enterApp() race when TOTP verification is required after login
+let _totpInProgress = false;
+let _pendingTotpLoginUser = null;
+
 // ─── Supabase Init ────────────────────────────────────────────────────────
 
 function initSupabase() {
@@ -66,6 +70,7 @@ async function init() {
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
+      if (_totpInProgress) return;
       const token = window.pendingInviteToken || sessionStorage.getItem('quickcheck_invite_token');
       if (token) {
         window.pendingInviteToken = null;

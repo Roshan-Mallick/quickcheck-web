@@ -5,19 +5,20 @@
  */
 function switchAuthView(view) {
   authView = view;
-  const views = ['login', 'register', 'forgot', 'forgot-sent', 'invite'];
+  const views = ['login', 'register', 'forgot', 'forgot-sent', 'invite', 'recovery', 'recovery-verify', 'recovery-otp', 'recovery-password', 'recovery-success'];
   views.forEach(v => {
     const el = document.getElementById('auth-view-' + v);
     if (el) el.hidden = v !== view;
   });
   const isLoginFlow = view === 'login' || view === 'forgot' || view === 'forgot-sent';
   const isInviteFlow = view === 'invite';
+  const isRecoveryFlow = view === 'recovery' || view === 'recovery-verify' || view === 'recovery-otp' || view === 'recovery-password' || view === 'recovery-success';
   document.getElementById('auth-tab-login').classList.toggle('active', isLoginFlow);
   document.getElementById('auth-tab-register').classList.toggle('active', view === 'register');
-  document.getElementById('auth-tab-login').style.display = isInviteFlow ? 'none' : '';
-  document.getElementById('auth-tab-register').style.display = isInviteFlow ? 'none' : '';
+  document.getElementById('auth-tab-login').style.display = (isInviteFlow || isRecoveryFlow) ? 'none' : '';
+  document.getElementById('auth-tab-register').style.display = (isInviteFlow || isRecoveryFlow) ? 'none' : '';
   clearAuthMessages();
-  if (!isInviteFlow) {
+  if (!isInviteFlow && !isRecoveryFlow) {
     const url = new URL(window.location);
     if (view === 'login') url.searchParams.delete('view');
     else url.searchParams.set('view', view);
@@ -29,7 +30,7 @@ function switchAuthView(view) {
 document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view && ['login','register','forgot'].includes(view)) {
+  if (view && ['login','register','forgot','recovery'].includes(view)) {
     switchAuthView(view);
   }
 });
@@ -228,6 +229,20 @@ async function handleLoginSubmit(e) {
     }
 
     currentUser = data.user;
+
+    // ── Admin emails cannot use the QuickCheck dashboard ──────────────
+    const { data: isAdminLogin } = await sb.rpc('is_admin_email', {
+      check_email: currentUser.email,
+    });
+    if (isAdminLogin) {
+      await sb.auth.signOut();
+      currentUser = null;
+      showAuthError('This email is registered as an admin and cannot sign in to Quickcheck. Please use the Admin Panel instead.');
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+
     if (window.pendingInviteToken) {
       const token = window.pendingInviteToken;
       window.pendingInviteToken = null;
@@ -235,6 +250,36 @@ async function handleLoginSubmit(e) {
       await handleInviteToken(token);
       return;
     }
+
+    // Check if TOTP 2FA is enabled
+    const { data: totpEnabled } = await sb.rpc('has_totp_enabled').catch(() => ({ data: false }));
+    if (totpEnabled) {
+      // Skip TOTP if device was trusted within the last 30 days
+      const trusted = localStorage.getItem('quickcheck_totp_trusted');
+      if (trusted) {
+        try {
+          const parsed = JSON.parse(trusted);
+          if (parsed.expires > Date.now()) {
+            await enterApp();
+            return;
+          }
+        } catch {}
+      }
+
+      _totpInProgress = true;
+      _pendingTotpLoginUser = currentUser;
+      document.getElementById('totp-login-token').value = '';
+      document.getElementById('totp-login-error').textContent = '';
+      document.getElementById('totp-login-error').style.display = 'none';
+      document.getElementById('totp-login-recovery-group').style.display = 'none';
+      document.getElementById('totp-login-verify-btn').style.display = '';
+      document.getElementById('totp-login-recover-btn').style.display = '';
+      document.getElementById('totp-login-desc').textContent = 'Enter the 6-digit code from your authenticator app.';
+      document.getElementById('totp-login-modal').classList.add('open');
+      document.getElementById('totp-login-token').focus();
+      return;
+    }
+
     await enterApp();
 
   } catch (err) {
@@ -282,6 +327,16 @@ async function handleRegisterSubmit(e) {
   clearAuthMessages();
 
   try {
+    // ── Check if this email is the admin email — admins cannot register ──
+    const { data: isAdmin } = await sb.rpc('is_admin_email', {
+      check_email: email,
+    });
+
+    if (isAdmin) {
+      showAuthError('This email is registered as an admin and cannot create a Quickcheck account.');
+      return;
+    }
+
     // ── Check for existing account before attempting signup ──────────
     const { data: emailExists, error: existsError } = await sb.rpc(
       'check_email_exists', { input_email: email }
@@ -414,4 +469,298 @@ async function signOut() {
   document.getElementById('app-screen').style.display  = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
   switchAuthView('login');
+}
+
+// ─── Account Recovery ───────────────────────────────────────────────────
+
+let _recoveryPrimaryEmail = null;
+let _recoveryResetToken = null;
+
+function backToRecoveryStep1() {
+  switchAuthView('recovery');
+}
+
+function backToRecoveryVerify() {
+  switchAuthView('recovery-verify');
+}
+
+async function handleRecoverySubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('recovery-email').value.trim();
+  const btn = document.getElementById('recovery-submit-btn');
+
+  if (!email) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Checking…';
+
+  try {
+    const { data, error } = await sb.rpc('check_recovery_email_exists', { primary_email: email });
+    if (error) throw error;
+
+    if (!data?.[0]?.has_recovery) {
+      showAuthError('No recovery email found for this account. Please use the standard password reset.');
+      btn.disabled = false;
+      btn.textContent = 'Recover Account';
+      return;
+    }
+
+    _recoveryPrimaryEmail = email;
+    switchAuthView('recovery-verify');
+  } catch (err) {
+    showAuthError(err.message || 'Failed to check account.');
+    btn.disabled = false;
+    btn.textContent = 'Recover Account';
+  }
+}
+
+async function handleRecoveryVerify(e) {
+  e.preventDefault();
+  const recoveryEmail = document.getElementById('recovery-verify-email').value.trim();
+  const errEl = document.getElementById('recovery-verify-error');
+  const btn = document.getElementById('recovery-verify-btn');
+
+  if (!recoveryEmail || !_recoveryPrimaryEmail) return;
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: match, error: matchError } = await sb.rpc('verify_recovery_email_match', {
+      primary_email: _recoveryPrimaryEmail,
+      recovery_email: recoveryEmail,
+    });
+    if (matchError) throw matchError;
+
+    if (!match) {
+      errEl.textContent = 'The recovery email does not match our records.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify Recovery Email';
+      return;
+    }
+
+    // Initiate recovery — sends OTP to the recovery email
+    const { data: initResult, error: initError } = await sb.rpc('initiate_recovery', {
+      primary_email: _recoveryPrimaryEmail,
+      recovery_email: recoveryEmail,
+    });
+    if (initError) throw initError;
+
+    if (!initResult.success) {
+      errEl.textContent = initResult.error || 'Failed to send OTP.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify Recovery Email';
+      return;
+    }
+
+    document.getElementById('recovery-otp-email-display').textContent = recoveryEmail;
+    switchAuthView('recovery-otp');
+  } catch (err) {
+    errEl.textContent = err.message || 'Verification failed.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Verify Recovery Email';
+  }
+}
+
+async function handleRecoveryOtp(e) {
+  e.preventDefault();
+  const otp = document.getElementById('recovery-otp-code').value.trim();
+  const errEl = document.getElementById('recovery-otp-error');
+  const btn = document.getElementById('recovery-otp-btn');
+
+  if (!otp || !_recoveryPrimaryEmail) return;
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data, error } = await sb.rpc('verify_recovery_otp', {
+      primary_email: _recoveryPrimaryEmail,
+      otp,
+    });
+    if (error) throw error;
+
+    if (!data.success) {
+      errEl.textContent = data.error || 'Invalid or expired code.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify Code';
+      return;
+    }
+
+    _recoveryResetToken = data.reset_token;
+    switchAuthView('recovery-password');
+  } catch (err) {
+    errEl.textContent = err.message || 'Verification failed.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Verify Code';
+  }
+}
+
+async function handleRecoveryPassword(e) {
+  e.preventDefault();
+  const pw = document.getElementById('recovery-new-password').value;
+  const confirmPw = document.getElementById('recovery-confirm-password').value;
+  const errEl = document.getElementById('recovery-password-error');
+  const btn = document.getElementById('recovery-password-btn');
+
+  errEl.style.display = 'none';
+
+  if (pw.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (pw !== confirmPw) {
+    errEl.textContent = 'Passwords do not match.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Resetting…';
+
+  try {
+    const { data, error } = await sb.rpc('reset_password_with_token', {
+      p_reset_token: _recoveryResetToken,
+      new_password: pw,
+    });
+    if (error) throw error;
+
+    if (!data.success) {
+      errEl.textContent = data.error || 'Failed to reset password.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Reset Password';
+      return;
+    }
+
+    _recoveryPrimaryEmail = null;
+    _recoveryResetToken = null;
+    switchAuthView('recovery-success');
+  } catch (err) {
+    errEl.textContent = err.message || 'Failed to reset password.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Reset Password';
+  }
+}
+
+// ─── TOTP Login Verification ───────────────────────────────────────────
+
+async function handleTotpLoginVerify() {
+  const token = document.getElementById('totp-login-token').value.trim();
+  const errEl = document.getElementById('totp-login-error');
+  errEl.style.display = 'none';
+
+  if (!token || token.length !== 6) {
+    errEl.textContent = 'Enter your 6-digit code.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('totp-login-verify-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: valid, error } = await sb.rpc('verify_totp_token', { token });
+    if (error) throw error;
+
+    if (!valid) {
+      errEl.textContent = 'Invalid code. Try again or use a backup code.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+
+    document.getElementById('totp-login-modal').classList.remove('open');
+    _totpInProgress = false;
+    const user = _pendingTotpLoginUser;
+    _pendingTotpLoginUser = null;
+    currentUser = user;
+    localStorage.setItem('quickcheck_totp_trusted', JSON.stringify({ expires: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+    await enterApp();
+  } catch (err) {
+    errEl.textContent = err.message || 'Verification failed.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Verify';
+  }
+}
+
+function showTotpLoginRecovery() {
+  document.getElementById('totp-login-verify-btn').style.display = 'none';
+  document.getElementById('totp-login-show-recover-btn').style.display = 'none';
+  document.getElementById('totp-login-recovery-group').style.display = 'block';
+  document.getElementById('totp-login-desc').textContent = 'Enter one of your backup recovery codes.';
+  document.getElementById('totp-login-recovery-code').value = '';
+  document.getElementById('totp-login-recovery-code').focus();
+  document.getElementById('totp-login-recovery-error').style.display = 'none';
+}
+
+function backToTotpLogin() {
+  document.getElementById('totp-login-recovery-group').style.display = 'none';
+  document.getElementById('totp-login-verify-btn').style.display = '';
+  document.getElementById('totp-login-show-recover-btn').style.display = '';
+  document.getElementById('totp-login-desc').textContent = 'Enter the 6-digit code from your authenticator app.';
+  document.getElementById('totp-login-token').value = '';
+  document.getElementById('totp-login-token').focus();
+}
+
+async function handleTotpLoginRecover() {
+  const code = document.getElementById('totp-login-recovery-code').value.trim();
+  const errEl = document.getElementById('totp-login-recovery-error');
+  errEl.style.display = 'none';
+
+  if (!code) {
+    errEl.textContent = 'Enter a backup recovery code.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('totp-login-recover-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+
+  try {
+    const { data: valid, error } = await sb.rpc('use_recovery_code', { code });
+    if (error) throw error;
+
+    if (!valid) {
+      errEl.textContent = 'Invalid or already used backup code.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify Recovery Code';
+      return;
+    }
+
+    document.getElementById('totp-login-modal').classList.remove('open');
+    _totpInProgress = false;
+    const user = _pendingTotpLoginUser;
+    _pendingTotpLoginUser = null;
+    currentUser = user;
+    localStorage.setItem('quickcheck_totp_trusted', JSON.stringify({ expires: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+    await enterApp();
+  } catch (err) {
+    errEl.textContent = err.message || 'Verification failed.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Verify Recovery Code';
+  }
+}
+
+async function closeTotpLoginModal() {
+  document.getElementById('totp-login-modal').classList.remove('open');
+  _totpInProgress = false;
+  _pendingTotpLoginUser = null;
+  if (sb) await sb.auth.signOut();
 }
