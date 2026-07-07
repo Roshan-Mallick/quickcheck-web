@@ -463,9 +463,7 @@ function openSettings() {
   document.getElementById('settings-current-email').value = ADMIN_EMAIL;
   document.getElementById('settings-new-email').value = '';
   document.getElementById('settings-email-otp-group').style.display = 'none';
-  document.getElementById('settings-email-confirm-group').style.display = 'none';
   document.getElementById('settings-email-otp').value = '';
-  document.getElementById('settings-email-confirm-otp').value = '';
   document.getElementById('settings-email-send-btn').style.display = 'inline-flex';
   document.getElementById('settings-email-msg').style.display = 'none';
   _pendingNewEmail = null;
@@ -476,9 +474,7 @@ function closeSettings() {
   document.getElementById('settings-modal').style.display = 'none';
   document.getElementById('settings-email-send-btn').style.display = 'inline-flex';
   document.getElementById('settings-email-otp-group').style.display = 'none';
-  document.getElementById('settings-email-confirm-group').style.display = 'none';
   document.getElementById('settings-email-otp').value = '';
-  document.getElementById('settings-email-confirm-otp').value = '';
   _pendingNewEmail = null;
 }
 
@@ -500,6 +496,8 @@ async function sendEmailOtp() {
   btn.disabled = true;
   btn.textContent = 'Sending OTP…';
 
+  console.log('[admin-email] sendEmailOtp — sending OTP to:', user.email, 'new email:', newEmail);
+
   const { error } = await sb.auth.signInWithOtp({
     email: user.email,
     options: { shouldCreateUser: false },
@@ -509,22 +507,40 @@ async function sendEmailOtp() {
   btn.textContent = 'Update Email';
 
   if (error) {
+    console.error('[admin-email] sendEmailOtp error:', error);
     showSettingsMsg('email', 'error', error.message);
     return;
   }
 
+  console.log('[admin-email] OTP sent successfully to:', user.email);
   document.getElementById('settings-email-send-btn').style.display = 'none';
   document.getElementById('settings-email-otp-group').style.display = 'block';
   document.getElementById('settings-email-otp').value = '';
   document.getElementById('settings-email-otp').focus();
-  showSettingsMsg('email', 'success', 'Step 1: OTP sent to your current email.');
+  showSettingsMsg('email', 'success', 'OTP sent to your current email.');
 }
 
 async function verifyEmailOtp() {
-  const user = _settingsUser;
-  if (!user || !_pendingNewEmail) return;
+  if (!_settingsUser || !_pendingNewEmail) return;
+
+  // Refresh user from session to avoid stale email
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user?.email) {
+    showSettingsMsg('email', 'error', 'Session expired. Please log in again.');
+    return;
+  }
+  _settingsUser = user;
+
   const otp = document.getElementById('settings-email-otp').value.trim();
   if (!otp) return;
+
+  console.log('[admin-email] verifyEmailOtp payload:', {
+    email: user.email,
+    otpLength: otp.length,
+    otpChars: [...otp].map(c => c.charCodeAt(0)),
+    type: 'email',
+    pendingNewEmail: _pendingNewEmail,
+  });
 
   const btn = document.getElementById('settings-email-verify-btn');
   btn.disabled = true;
@@ -536,60 +552,31 @@ async function verifyEmailOtp() {
       token: otp,
       type: 'email',
     });
-    if (error) throw error;
 
-    if (verifyData?.session) {
-      await sb.auth.setSession(verifyData.session);
+    console.log('[admin-email] verifyOtp result:', {
+      success: !error,
+      error: error ? { message: error.message, code: error.code, status: error.status } : null,
+      hasSession: !!verifyData?.session,
+      hasUser: !!verifyData?.user,
+    });
+
+    if (error) {
+      if (error.message?.toLowerCase().includes('expired') || error.code === 'otp_expired') {
+        throw new Error('OTP has expired or is invalid. Click "Resend" to get a new code.');
+      }
+      throw error;
     }
 
-    const { error: otp2Error } = await sb.auth.signInWithOtp({
-      email: user.email,
-      options: { shouldCreateUser: false },
-    });
-    if (otp2Error) throw otp2Error;
+    // Do NOT call setSession here — the user is already authenticated and
+    // replacing the session would drop the JWT email claim that the RPC
+    // function (admin_update_auth_email) relies on via auth.email().
+    // Keep the existing session. This matches the working pattern in account.js.
 
-    document.getElementById('settings-email-otp-group').style.display = 'none';
-    document.getElementById('settings-email-confirm-group').style.display = 'block';
-    document.getElementById('settings-email-confirm-otp').value = '';
-    document.getElementById('settings-email-confirm-otp').focus();
-    showSettingsMsg('email', 'success', 'Step 2: Another OTP sent to your current email. Enter it to finalize the change.');
-
-    btn.disabled = false;
-    btn.textContent = 'Verify';
-
-  } catch (err) {
-    showSettingsMsg('email', 'error', err.message);
-    btn.disabled = false;
-    btn.textContent = 'Verify';
-  }
-}
-
-async function confirmNewEmailOtp() {
-  const user = _settingsUser;
-  if (!user || !_pendingNewEmail) return;
-  const otp = document.getElementById('settings-email-confirm-otp').value.trim();
-  if (!otp) return;
-
-  const btn = document.getElementById('settings-email-confirm-btn');
-  btn.disabled = true;
-  btn.textContent = 'Updating…';
-
-  try {
-    const { data: verifyData, error } = await sb.auth.verifyOtp({
-      email: user.email,
-      token: otp,
-      type: 'email',
-    });
-    if (error) throw error;
-
-    if (verifyData?.session) {
-      await sb.auth.setSession(verifyData.session);
-    }
-
-    // Both steps verified — update auth.users.email AND admin_config directly
     const { error: rpcError } = await sb.rpc('admin_update_auth_email', {
       new_email: _pendingNewEmail,
     });
+
+    console.log('[admin-email] RPC result:', { success: !rpcError, error: rpcError });
     if (rpcError) throw rpcError;
 
     await loadAdminConfig();
@@ -603,41 +590,30 @@ async function confirmNewEmailOtp() {
     showSettingsMsg('email', 'success', 'Email changed to ' + changedEmail + '.');
 
     btn.disabled = false;
-    btn.textContent = 'Confirm';
+    btn.textContent = 'Verify';
     setTimeout(closeSettings, 1500);
 
   } catch (err) {
-    showSettingsMsg('email', 'error', err.message);
+    console.error('[admin-email] verifyEmailOtp error:', err);
+    showSettingsMsg('email', 'error', err.message || 'Verification failed.');
     btn.disabled = false;
-    btn.textContent = 'Confirm';
+    btn.textContent = 'Verify';
   }
 }
 
 function resendEmailOtp() {
   const user = _settingsUser;
   if (!user) return;
+
+  console.log('[admin-email] resendEmailOtp — resending OTP to:', user.email);
+
+  document.getElementById('settings-email-otp').value = '';
+  document.getElementById('settings-email-otp').focus();
+
   const btn = document.getElementById('settings-email-resend-btn');
   btn.disabled = true;
   btn.textContent = 'Sending…';
-  sb.auth.signInWithOtp({
-    email: user.email,
-    options: { shouldCreateUser: false },
-  }).then(() => {
-    btn.disabled = false;
-    btn.textContent = 'Resend code';
-    showSettingsMsg('email', 'success', 'OTP resent to your current email.');
-  }).catch(() => {
-    btn.disabled = false;
-    btn.textContent = 'Resend code';
-  });
-}
 
-function resendNewEmailOtp() {
-  const user = _settingsUser;
-  if (!user) return;
-  const btn = document.getElementById('settings-email-confirm-resend-btn');
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
   sb.auth.signInWithOtp({
     email: user.email,
     options: { shouldCreateUser: false },
@@ -645,9 +621,11 @@ function resendNewEmailOtp() {
     btn.disabled = false;
     btn.textContent = 'Resend code';
     showSettingsMsg('email', 'success', 'OTP resent to your current email.');
-  }).catch(() => {
+    console.log('[admin-email] OTP resent successfully');
+  }).catch((err) => {
     btn.disabled = false;
     btn.textContent = 'Resend code';
+    console.error('[admin-email] resend failed:', err);
   });
 }
 
