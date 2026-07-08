@@ -269,6 +269,26 @@ async function inviteToWorkspace(wsId, email, role) {
       invite_role: role || 'viewer',
     });
     if (error) { showToast(error.message, 'error'); return; }
+
+    // Call Edge Function from client (no service role JWT needed in SQL)
+    if (data && data.email && data.token) {
+      try {
+        var inviteLink = window.location.origin + '/auth/?invite=' + encodeURIComponent(data.token);
+        var res = await fetch(SUPABASE_URL + '/functions/v1/send-invite-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON },
+          body: JSON.stringify({
+            email: data.email,
+            workspace_name: data.workspace_name,
+            inviter_name: data.inviter_name,
+            role: role || 'viewer',
+            invite_link: inviteLink,
+          }),
+        });
+        if (!res.ok) console.warn('[invite] Edge Function returned', res.status, await res.text());
+      } catch (e) { console.warn('[invite] Edge Function call failed:', e); }
+    }
+
     showToast('Invitation sent.');
     await loadWorkspaceMembers(wsId);
     closeModal('invite-member-modal');
@@ -1184,6 +1204,25 @@ async function inviteFromManageMembers() {
       invite_role: role,
     });
     if (error) { showToast(error.message, 'error'); return; }
+
+    if (data && data.email && data.token) {
+      try {
+        var inviteLink = window.location.origin + '/auth/?invite=' + encodeURIComponent(data.token);
+        var res = await fetch(SUPABASE_URL + '/functions/v1/send-invite-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_ANON },
+          body: JSON.stringify({
+            email: data.email,
+            workspace_name: data.workspace_name,
+            inviter_name: data.inviter_name,
+            role: role,
+            invite_link: inviteLink,
+          }),
+        });
+        if (!res.ok) console.warn('[invite] Edge Function returned', res.status, await res.text());
+      } catch (e) { console.warn('[invite] Edge Function call failed:', e); }
+    }
+
     showToast('Invitation sent.');
     document.getElementById('mm-invite-email').value = '';
     await loadWorkspaceMembers(wsId);
@@ -1289,7 +1328,7 @@ function handleOwnerExitWorkspace(wsId) {
     return;
   }
   const list = others.map(m =>
-    `<button class="mm-action-item" onclick="closeModal('confirm-modal'); transferAndLeave('${wsId}','${esc(m.user_id)}','${esc(m.name)}')">
+    `<button class="mm-action-btn" onclick="closeModal('confirm-modal'); transferAndLeave('${wsId}','${esc(m.user_id)}','${esc(m.name)}')">
       ${esc(m.name || m.email)}
     </button>`
   ).join('');

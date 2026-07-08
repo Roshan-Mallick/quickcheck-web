@@ -1,9 +1,7 @@
-// ─── Temporary code‑based plan upgrade ─────────────────────────────────
+// ─── Code‑based plan upgrade ─────────────────────────────────────────────
 // TEMPORARY: Will be replaced by Stripe/payment integration.
 // TODO: Remove this file and all references when Stripe is implemented.
-
-const PRO_ACCESS_CODE  = 'PRO';
-const TEAM_ACCESS_CODE = 'TEAM';
+// Codes are validated server-side via the access_codes table.
 
 // The plan being upgraded to (set before opening modal)
 let _targetPlan = null;
@@ -42,12 +40,18 @@ async function handleUpgradeSubmit(e) {
     return;
   }
 
-  // Validate against hardcoded codes
-  const valid = (_targetPlan === 'pro' && code.toUpperCase() === PRO_ACCESS_CODE) ||
-                (_targetPlan === 'team' && code.toUpperCase() === TEAM_ACCESS_CODE);
-
-  if (!valid) {
-    msg.textContent = 'Invalid access code. Please try again.';
+  // Validate and redeem in one atomic server-side call
+  try {
+    const { data, error } = await sb.rpc('redeem_access_code', { p_code: code, p_plan: _targetPlan });
+    if (error) throw error;
+    if (data !== true) {
+      msg.textContent = 'Invalid access code. Please try again.';
+      msg.className   = 'account-msg error';
+      return;
+    }
+  } catch (err) {
+    console.error('Access code error:', err);
+    msg.textContent = err.message === 'Invalid or already used code' ? 'Invalid access code.' : 'Upgrade unavailable. Try again later.';
     msg.className   = 'account-msg error';
     return;
   }
@@ -58,11 +62,6 @@ async function handleUpgradeSubmit(e) {
   msg.className    = 'account-msg';
 
   try {
-    // TEMPORARY: Direct database plan update.
-    // TODO: Replace with Stripe subscription creation + webhook.
-    const { error } = await sb.rpc('set_user_plan', { new_plan: _targetPlan });
-    if (error) throw error;
-
     // Optimistically update local state immediately so UI reflects the change
     const limits = { pro: { plan: 'pro', workspace_limit: 5 }, team: { plan: 'team', workspace_limit: Infinity } };
     window.userSubscription = { ...(window.userSubscription || {}), ...(limits[_targetPlan] || {}) };

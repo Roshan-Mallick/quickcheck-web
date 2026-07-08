@@ -523,8 +523,10 @@
     }
 
     // ─── Preview ────────────────────────────────────
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
     function mdToHtml(md) {
-      let html = md
+      let html = escHtml(md)
         .replace(/^### (.+)$/gm, '<h3>$1</h3>')
         .replace(/^## (.+)$/gm, '<h2>$1</h2>')
         .replace(/^# (.+)$/gm, '<h1>$1</h1>')

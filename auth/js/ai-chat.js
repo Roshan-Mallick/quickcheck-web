@@ -1,4 +1,5 @@
-const AI_FUNCTION_URL = SUPABASE_URL + '/functions/v1/generate-checklist'
+if (!SUPABASE_URL || !SUPABASE_URL.startsWith('https://')) throw new Error('Invalid SUPABASE_URL');
+const AI_FUNCTION_URL = SUPABASE_URL + '/functions/v1/generate-checklist';
 
 let chatHistory = []
 let chatLoading = false

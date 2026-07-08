@@ -271,7 +271,7 @@ async function acceptInviteFromToken() {
       console.error('[invite] wsId is null/undefined after successful RPC');
     }
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'flex';
+    document.getElementById('app-screen').style.display = 'block';
   } catch (err) {
     console.error('[invite] Catch error:', err);
     showToast(err.message || 'Failed to accept invitation.', 'error');
@@ -289,8 +289,7 @@ function closeInviteAndShowApp() {
   sessionStorage.removeItem('quickcheck_invite_token');
   document.getElementById('invite-container').style.display = 'none';
   if (currentUser) {
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'flex';
+    enterApp();
   } else {
     switchAuthView('login');
   }
