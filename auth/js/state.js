@@ -118,6 +118,10 @@ async function init() {
   }
 
   if (session?.user) {
+    var view = new URLSearchParams(window.location.search).get('view');
+    if (view === 'recovery' || view === 'forgot' || view === 'forgot-sent') {
+      return;
+    }
     currentUser = session.user;
     await enterApp();
   }
