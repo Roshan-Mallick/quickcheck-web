@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.min.js" integrity="sha384-UQ9Ztz63gzT2JZCuDRkNXV8RP/gXxdPUuM9LKlz2BzqGx9xFYNAK8yAEgbfZHs7P" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
@@ -40,6 +41,65 @@
       </div>
     </div>
 
+    <!-- ─── TOTP VERIFY MODAL ─────────────── -->
+    <div class="admin-modal-overlay totp-verify-modal" id="totp-verify-modal" style="display:none">
+      <div class="admin-modal">
+        <h2 class="admin-login-title" style="margin-bottom:4px">Two-Factor Authentication</h2>
+        <p class="admin-login-sub" style="margin-bottom:16px">Enter the 6-digit code from your authenticator app.</p>
+        <div id="totp-verify-error" class="admin-error" style="display:none;text-align:left"></div>
+        <div class="admin-field">
+          <input type="text" id="totp-verify-input" class="admin-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
+        </div>
+        <div class="admin-modal-actions" style="justify-content:center">
+          <button class="admin-btn admin-btn-outline" onclick="cancelTOTPVerify()">Cancel</button>
+          <button class="admin-btn admin-btn-primary" id="totp-verify-btn" onclick="verifyTOTPAndLogin()">Verify</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 2FA MODAL ─────────────────────── -->
+    <div class="admin-modal-overlay" id="totp-modal" style="display:none">
+      <div class="admin-modal totp-modal-dialog">
+        <div class="totp-modal-header">
+          <h2 class="admin-modal-title">Two-Factor Authentication</h2>
+          <button class="admin-btn admin-btn-outline" onclick="closeTOTPModal()" style="padding:4px 10px;font-size:.9rem">✕</button>
+        </div>
+
+        <div id="totp-setup-view">
+          <p class="totp-setup-hint">Scan this QR code with your authenticator app (e.g. Google Authenticator, Authy, 1Password).</p>
+          <div class="totp-qr-container">
+            <img id="totp-qr-img" src="" alt="QR Code" />
+          </div>
+          <div class="admin-field">
+            <label>Manual Key</label>
+            <input type="text" id="totp-secret-display" class="admin-input-readonly totp-secret-display" readonly />
+          </div>
+          <div class="admin-field">
+            <label>Verification Code</label>
+            <input type="text" id="totp-setup-verify-input" class="admin-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
+          </div>
+          <div id="totp-setup-msg" class="admin-msg"></div>
+          <div class="admin-modal-actions">
+            <button class="admin-btn admin-btn-outline" onclick="closeTOTPModal()">Cancel</button>
+            <button class="admin-btn admin-btn-primary" onclick="confirmTOTPSetup()">Confirm</button>
+          </div>
+        </div>
+
+        <div id="totp-manage-view" style="display:none">
+          <p class="totp-status-enabled" style="margin-bottom:16px">Two-factor authentication is enabled.</p>
+          <div class="admin-field">
+            <label>Enter your current code to remove 2FA</label>
+            <input type="text" id="totp-remove-input" class="admin-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
+          </div>
+          <div id="totp-remove-msg" class="admin-msg"></div>
+          <div class="admin-modal-actions">
+            <button class="admin-btn admin-btn-outline" onclick="closeTOTPModal()">Cancel</button>
+            <button class="admin-btn admin-btn-danger" onclick="confirmTOTPRemove()">Remove 2FA</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ─── DASHBOARD SCREEN ──────────────── -->
     <div id="dashboard-screen" style="display:none">
       <header class="admin-topbar">
@@ -49,6 +109,7 @@
         </div>
         <div class="admin-topbar-right">
           <span class="admin-topbar-email" id="admin-email-display"></span>
+          <button class="admin-btn admin-btn-outline" id="totp-nav-btn" onclick="openTOTPModal()" style="display:none">Enable 2FA</button>
           <button class="admin-btn admin-btn-outline" onclick="openSettings()">Settings</button>
           <button class="admin-btn admin-btn-outline" onclick="handleLogout()">Logout</button>
         </div>
@@ -177,6 +238,18 @@
                 <input type="text" id="settings-email-otp" class="admin-otp-input" placeholder="00000000" maxlength="8" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" />
                 <button class="admin-btn admin-btn-primary" id="settings-email-verify-btn" onclick="verifyEmailOtp()">Verify</button>
                 <button class="admin-btn admin-btn-outline" id="settings-email-resend-btn" onclick="resendEmailOtp()">Resend</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: TOTP for email change -->
+          <div id="settings-email-totp-group" class="admin-otp-group" style="display:none">
+            <div class="admin-step-label">Enter your 2FA code</div>
+            <div class="admin-field">
+              <label>Authentication Code</label>
+              <div class="admin-otp-row">
+                <input type="text" id="settings-email-totp" class="admin-otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
+                <button class="admin-btn admin-btn-primary" id="settings-email-totp-btn" onclick="verifyEmailTOTP()">Verify</button>
               </div>
             </div>
           </div>

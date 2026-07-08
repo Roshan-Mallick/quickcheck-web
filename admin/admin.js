@@ -15,6 +15,112 @@ let _settingsUser = null;
 let _pendingNewEmail = null;
 let _otpCooldownTimer = null;
 
+/* ─── TOTP / 2FA Helpers ──────────────────── */
+let _totpSecret = null;
+let _pendingLoginUser = null;
+let _pendingTOTPSecret = null;
+
+function base32Encode(bytes) {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let r = '', b = 0, bits = 0;
+  for (const v of bytes) {
+    b = (b << 8) | v; bits += 8;
+    while (bits >= 5) { bits -= 5; r += c[(b >> bits) & 31]; }
+  }
+  if (bits > 0) r += c[(b << (5 - bits)) & 31];
+  while (r.length % 8) r += '=';
+  return r;
+}
+
+function base32Decode(s) {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s = s.replace(/=+$/, '').toUpperCase();
+  const bytes = [];
+  let b = 0, bits = 0;
+  for (const ch of s) {
+    const idx = c.indexOf(ch);
+    if (idx < 0) continue;
+    b = (b << 5) | idx; bits += 5;
+    if (bits >= 8) { bits -= 8; bytes.push(b >> bits); b &= (1 << bits) - 1; }
+  }
+  return new Uint8Array(bytes);
+}
+
+async function verifyTOTP(secret, token) {
+  const key = await crypto.subtle.importKey('raw', base32Decode(secret), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+  const now = Math.floor(Date.now() / 1000);
+  for (let d = -1; d <= 1; d++) {
+    let t = Math.floor(now / 30) + d;
+    const buf = new Uint8Array(8);
+    for (let i = 7; i >= 0; i--) { buf[i] = t & 0xff; t >>= 8; }
+    const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, buf));
+    const off = sig[19] & 15;
+    const code = ((sig[off] & 127) << 24) | (sig[off + 1] << 16) | (sig[off + 2] << 8) | sig[off + 3];
+    if (String(code % 1000000).padStart(6, '0') === token) return true;
+  }
+  return false;
+}
+
+async function loadTOTPSecret() {
+  _totpSecret = null;
+  const { data, error } = await sb.from('admin_config').select('value').eq('key', 'totp_secret');
+  if (error) { console.error('[totp] load error:', error); return null; }
+  _totpSecret = data && data.length ? data[0].value : null;
+  return _totpSecret;
+}
+
+async function saveTOTPSecret(secret) {
+  const { data } = await sb.from('admin_config').select('key').eq('key', 'totp_secret');
+  if (data && data.length) {
+    await sb.from('admin_config').update({ value: secret }).eq('key', 'totp_secret');
+  } else {
+    await sb.from('admin_config').insert({ key: 'totp_secret', value: secret });
+  }
+  _totpSecret = secret;
+}
+
+function generateTOTPSecret() {
+  const b = new Uint8Array(20);
+  crypto.getRandomValues(b);
+  return base32Encode(b);
+}
+
+function updateTOTPButton() {
+  const btn = document.getElementById('totp-nav-btn');
+  if (!btn) return;
+  if (_totpSecret) {
+    btn.textContent = 'Manage 2FA';
+    btn.style.display = '';
+  } else {
+    btn.textContent = 'Enable 2FA';
+    btn.style.display = '';
+  }
+}
+
+function openTOTPModal() {
+  document.getElementById('totp-modal').style.display = 'flex';
+  document.getElementById('totp-setup-msg').className = 'admin-msg';
+  document.getElementById('totp-setup-msg').style.display = 'none';
+  document.getElementById('totp-remove-msg').className = 'admin-msg';
+  document.getElementById('totp-remove-msg').style.display = 'none';
+
+  if (_totpSecret) {
+    document.getElementById('totp-setup-view').style.display = 'none';
+    document.getElementById('totp-manage-view').style.display = 'block';
+    document.getElementById('totp-remove-input').value = '';
+    document.getElementById('totp-remove-input').focus();
+  } else {
+    document.getElementById('totp-setup-view').style.display = 'block';
+    document.getElementById('totp-manage-view').style.display = 'none';
+    startTOTPSetup();
+  }
+}
+
+function closeTOTPModal() {
+  document.getElementById('totp-modal').style.display = 'none';
+  _pendingTOTPSecret = null;
+}
+
 function logAuthState(label) {
   sb.auth.getUser().then(({ data }) => {
     console.log(`[auth] ${label}:`, {
@@ -128,6 +234,19 @@ async function verifyLoginOtp() {
       return;
     }
 
+    await loadTOTPSecret();
+    if (_totpSecret) {
+      _pendingLoginUser = user;
+      document.getElementById('totp-verify-modal').style.display = 'flex';
+      document.getElementById('totp-verify-input').value = '';
+      document.getElementById('totp-verify-input').focus();
+      document.getElementById('totp-verify-error').style.display = 'none';
+      document.getElementById('totp-verify-error').className = 'admin-error';
+      document.getElementById('totp-verify-btn').disabled = false;
+      document.getElementById('totp-verify-btn').textContent = 'Verify';
+      return;
+    }
+
     enterDashboard(user);
 
   } catch (err) {
@@ -194,6 +313,46 @@ function resendLoginOtp() {
     errEl.textContent = err.message || 'Failed to resend.';
     errEl.style.display = 'block';
   });
+}
+
+function cancelTOTPVerify() {
+  document.getElementById('totp-verify-modal').style.display = 'none';
+  _pendingLoginUser = null;
+  if (_otpCooldownTimer) { clearInterval(_otpCooldownTimer); _otpCooldownTimer = null; }
+  sb.auth.signOut();
+  document.getElementById('admin-login-btn').style.display = '';
+  document.getElementById('login-otp-row').style.display = 'none';
+  document.getElementById('admin-email').value = '';
+}
+
+async function verifyTOTPAndLogin() {
+  const token = document.getElementById('totp-verify-input').value.trim();
+  const errEl = document.getElementById('totp-verify-error');
+  try {
+    if (!token || token.length !== 6 || !/^\d{6}$/.test(token)) {
+      errEl.textContent = 'Enter a valid 6-digit code.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('totp-verify-btn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+    const valid = await verifyTOTP(_totpSecret, token);
+    if (!valid) {
+      errEl.textContent = 'Invalid code. Please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+    document.getElementById('totp-verify-modal').style.display = 'none';
+    enterDashboard(_pendingLoginUser);
+    _pendingLoginUser = null;
+  } catch (e) {
+    console.error('[totp] verifyTOTPAndLogin error:', e);
+    errEl.textContent = 'Error: ' + (e.message || 'Verification failed');
+    errEl.style.display = 'block';
+  }
 }
 
 let _recoveryUser = null;
@@ -279,6 +438,7 @@ function enterDashboard(user) {
   document.getElementById('login-screen').style.display  = 'none';
   document.getElementById('dashboard-screen').style.display = 'block';
   document.getElementById('admin-email-display').textContent = user.email;
+  updateTOTPButton();
   loadTemplates();
 }
 
@@ -463,6 +623,7 @@ function openSettings() {
   document.getElementById('settings-current-email').value = ADMIN_EMAIL;
   document.getElementById('settings-new-email').value = '';
   document.getElementById('settings-email-otp-group').style.display = 'none';
+  document.getElementById('settings-email-totp-group').style.display = 'none';
   document.getElementById('settings-email-otp').value = '';
   document.getElementById('settings-email-send-btn').style.display = 'inline-flex';
   document.getElementById('settings-email-msg').style.display = 'none';
@@ -474,6 +635,7 @@ function closeSettings() {
   document.getElementById('settings-modal').style.display = 'none';
   document.getElementById('settings-email-send-btn').style.display = 'inline-flex';
   document.getElementById('settings-email-otp-group').style.display = 'none';
+  document.getElementById('settings-email-totp-group').style.display = 'none';
   document.getElementById('settings-email-otp').value = '';
   _pendingNewEmail = null;
 }
@@ -567,48 +729,20 @@ async function verifyEmailOtp() {
       throw error;
     }
 
-    // Do NOT call setSession here — the user is already authenticated and
-    // replacing the session would drop the JWT email claim that the RPC
-    // function (admin_update_auth_email) relies on via auth.email().
-    // Keep the existing session. This matches the working pattern in account.js.
-
-    const { error: rpcError } = await sb.rpc('admin_update_auth_email', {
-      new_email: _pendingNewEmail,
-    });
-
-    console.log('[admin-email] RPC result:', { success: !rpcError, error: rpcError });
-    if (rpcError) throw rpcError;
-
-    // Refresh the session so the JWT gets the new email claim.
-    // Without this, all subsequent REST requests (templates, admin_config)
-    // will fail RLS because auth.jwt() ->> 'email' still has the old value.
-    console.log('[admin-email] refreshing session to pick up new email claim…');
-    const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
-    if (refreshError) {
-      console.error('[admin-email] session refresh failed:', refreshError);
-      // Non-fatal — try getUser as fallback
-      const { data: userData } = await sb.auth.getUser();
-      if (userData?.user) {
-        _settingsUser = userData.user;
-      }
-    } else if (refreshData?.user) {
-      _settingsUser = refreshData.user;
-      console.log('[admin-email] session refreshed, new email:', _settingsUser.email);
-    }
-
-    await loadAdminConfig();
-
-    _settingsUser = { ..._settingsUser, email: _pendingNewEmail };
-    document.getElementById('admin-email-display').textContent = _pendingNewEmail;
-    document.getElementById('settings-current-email').value = _pendingNewEmail;
-
-    const changedEmail = _pendingNewEmail;
-    _pendingNewEmail = null;
-    showSettingsMsg('email', 'success', 'Email changed to ' + changedEmail + '.');
-
+    // OTP verified — check if TOTP is required before completing change
     btn.disabled = false;
     btn.textContent = 'Verify';
-    setTimeout(closeSettings, 1500);
+    await loadTOTPSecret();
+    if (_totpSecret) {
+      document.getElementById('settings-email-otp-group').style.display = 'none';
+      document.getElementById('settings-email-totp-group').style.display = 'block';
+      document.getElementById('settings-email-totp').value = '';
+      document.getElementById('settings-email-totp').focus();
+      showSettingsMsg('email', 'success', 'OTP verified. Enter your 2FA code.');
+      return;
+    }
+
+    await completeEmailChange();
 
   } catch (err) {
     console.error('[admin-email] verifyEmailOtp error:', err);
@@ -644,6 +778,166 @@ function resendEmailOtp() {
     btn.textContent = 'Resend code';
     console.error('[admin-email] resend failed:', err);
   });
+}
+
+async function completeEmailChange() {
+  const { error: rpcError } = await sb.rpc('admin_update_auth_email', {
+    new_email: _pendingNewEmail,
+  });
+  if (rpcError) {
+    showSettingsMsg('email', 'error', rpcError.message || 'Failed to update email.');
+    return;
+  }
+  const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+  if (refreshError) {
+    console.error('[admin-email] session refresh failed:', refreshError);
+    const { data: userData } = await sb.auth.getUser();
+    if (userData?.user) _settingsUser = userData.user;
+  } else if (refreshData?.user) {
+    _settingsUser = refreshData.user;
+  }
+  await loadAdminConfig();
+  _settingsUser = { ..._settingsUser, email: _pendingNewEmail };
+  document.getElementById('admin-email-display').textContent = _pendingNewEmail;
+  document.getElementById('settings-current-email').value = _pendingNewEmail;
+  const changedEmail = _pendingNewEmail;
+  _pendingNewEmail = null;
+  showSettingsMsg('email', 'success', 'Email changed to ' + changedEmail + '.');
+  setTimeout(closeSettings, 1500);
+}
+
+async function verifyEmailTOTP() {
+  const token = document.getElementById('settings-email-totp').value.trim();
+  try {
+    if (!token || token.length !== 6 || !/^\d{6}$/.test(token)) {
+      showSettingsMsg('email', 'error', 'Enter a valid 6-digit code.');
+      return;
+    }
+    const btn = document.getElementById('settings-email-totp-btn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+    const valid = await verifyTOTP(_totpSecret, token);
+    if (!valid) {
+      showSettingsMsg('email', 'error', 'Invalid 2FA code. Try again.');
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return;
+    }
+    document.getElementById('settings-email-totp-group').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = 'Verify';
+    await completeEmailChange();
+  } catch (e) {
+    console.error('[totp] verifyEmailTOTP error:', e);
+    showSettingsMsg('email', 'error', 'Error: ' + (e.message || 'Unknown error'));
+  }
+}
+
+/* ─── TOTP Setup ─────────────────────────── */
+function startTOTPSetup() {
+  _pendingTOTPSecret = generateTOTPSecret();
+  const uri = 'otpauth://totp/Quickcheck:Admin?secret=' + _pendingTOTPSecret + '&issuer=Quickcheck&algorithm=SHA1&digits=6&period=30';
+  document.getElementById('totp-secret-display').value = _pendingTOTPSecret.match(/.{1,4}/g).join(' ');
+  document.getElementById('totp-setup-verify-input').value = '';
+  document.getElementById('totp-setup-verify-input').focus();
+  document.getElementById('totp-setup-msg').className = 'admin-msg';
+  document.getElementById('totp-setup-msg').style.display = 'none';
+  console.log('[totp] generating QR for:', uri.slice(0, 60) + '…');
+  const img = document.getElementById('totp-qr-img');
+  img.src = '';
+  try {
+    const qr = qrcode(0, 'L');
+    qr.addData(uri);
+    qr.make();
+    const url = qr.createDataURL(4, 4);
+    console.log('[totp] QR data URL length:', url.length);
+    img.src = url;
+  } catch (e) {
+    console.error('[totp] QR generation failed:', e);
+  }
+}
+
+async function confirmTOTPSetup() {
+  const token = document.getElementById('totp-setup-verify-input').value.trim();
+  const msgEl = document.getElementById('totp-setup-msg');
+  try {
+    if (!token || token.length !== 6 || !/^\d{6}$/.test(token)) {
+      msgEl.className = 'admin-msg error';
+      msgEl.textContent = 'Enter a valid 6-digit code.';
+      msgEl.style.display = 'block';
+      return;
+    }
+    const valid = await verifyTOTP(_pendingTOTPSecret, token);
+    if (!valid) {
+      msgEl.className = 'admin-msg error';
+      msgEl.textContent = 'Invalid code. Make sure your authenticator app is set up correctly and try again.';
+      msgEl.style.display = 'block';
+      return;
+    }
+    await saveTOTPSecret(_pendingTOTPSecret);
+    msgEl.className = 'admin-msg success';
+    msgEl.textContent = 'Two-factor authentication is now enabled.';
+    msgEl.style.display = 'block';
+    _pendingTOTPSecret = null;
+    updateTOTPButton();
+    setTimeout(() => closeTOTPModal(), 1500);
+  } catch (e) {
+    console.error('[totp] confirmTOTPSetup error:', e);
+    msgEl.className = 'admin-msg error';
+    msgEl.textContent = 'Error: ' + (e.message || 'Unknown error');
+    msgEl.style.display = 'block';
+  }
+}
+
+function cancelTOTPSetup() {
+  _pendingTOTPSecret = null;
+}
+
+async function deleteTOTPSecret() {
+  await sb.from('admin_config').delete().eq('key', 'totp_secret');
+  _totpSecret = null;
+}
+
+function removeTOTPStart() {
+  document.getElementById('totp-remove-btn').style.display = 'none';
+  document.getElementById('totp-remove-area').style.display = 'block';
+  document.getElementById('totp-remove-input').value = '';
+  document.getElementById('totp-remove-input').focus();
+  document.getElementById('totp-remove-msg').className = 'admin-msg';
+  document.getElementById('totp-remove-msg').style.display = 'none';
+}
+
+async function confirmTOTPRemove() {
+  const token = document.getElementById('totp-remove-input').value.trim();
+  const msgEl = document.getElementById('totp-remove-msg');
+  try {
+    if (!token || token.length !== 6 || !/^\d{6}$/.test(token)) {
+      msgEl.className = 'admin-msg error';
+      msgEl.textContent = 'Enter a valid 6-digit code.';
+      msgEl.style.display = 'block';
+      return;
+    }
+    const valid = await verifyTOTP(_totpSecret, token);
+    if (!valid) {
+      msgEl.className = 'admin-msg error';
+      msgEl.textContent = 'Invalid code. Try again.';
+      msgEl.style.display = 'block';
+      return;
+    }
+    await deleteTOTPSecret();
+    updateTOTPButton();
+    closeTOTPModal();
+  } catch (e) {
+    console.error('[totp] confirmTOTPRemove error:', e);
+    msgEl.className = 'admin-msg error';
+    msgEl.textContent = 'Error: ' + (e.message || 'Unknown error');
+    msgEl.style.display = 'block';
+  }
+}
+
+function cancelTOTPRemove() {
+  document.getElementById('totp-remove-area').style.display = 'none';
+  document.getElementById('totp-remove-btn').style.display = '';
 }
 
 function showSettingsMsg(section, type, text) {
@@ -694,6 +988,23 @@ function closeModal(id) {
   logAuthState('auto-login');
 
   if (!ADMIN_EMAIL || user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return;
+
+  await loadTOTPSecret();
+  if (_totpSecret) {
+    // Re-prompt for TOTP on every fresh page load
+    _pendingLoginUser = user;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('admin-login-btn').style.display = 'none';
+    document.getElementById('login-otp-row').style.display = 'none';
+    document.getElementById('totp-verify-modal').style.display = 'flex';
+    document.getElementById('totp-verify-input').value = '';
+    document.getElementById('totp-verify-input').focus();
+    document.getElementById('totp-verify-error').style.display = 'none';
+    document.getElementById('totp-verify-error').className = 'admin-error';
+    document.getElementById('totp-verify-btn').disabled = false;
+    document.getElementById('totp-verify-btn').textContent = 'Verify';
+    return;
+  }
 
   enterDashboard(user);
 })();

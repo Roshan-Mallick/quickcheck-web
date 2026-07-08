@@ -73,6 +73,8 @@ input,textarea,button,select{font-family:inherit;font-size:.9rem}
   color:var(--danger);
   margin-bottom:16px;
   display:none;
+  word-break:break-word;
+  overflow-wrap:anywhere;
 }
 
 /* ─── Form Fields ─────────────────────────── */
@@ -173,6 +175,10 @@ input,textarea,button,select{font-family:inherit;font-size:.9rem}
 .admin-topbar-email{
   font-size:.8rem;
   color:var(--muted);
+  max-width:240px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
 /* ─── Dashboard Main ──────────────────────── */
@@ -203,6 +209,8 @@ input,textarea,button,select{font-family:inherit;font-size:.9rem}
   font-size:.85rem;
   margin-bottom:16px;
   display:none;
+  word-break:break-word;
+  overflow-wrap:anywhere;
 }
 .admin-msg.success{display:block;background:rgba(109,175,130,0.12);border:1px solid rgba(109,175,130,0.25);color:#6daf82}
 .admin-msg.error{display:block;background:var(--danger-dim);border:1px solid rgba(224,122,122,0.25);color:var(--danger)}
@@ -447,3 +455,28 @@ input,textarea,button,select{font-family:inherit;font-size:.9rem}
   color:var(--accent);
   margin-bottom:8px;
 }
+
+/* ─── TOTP / 2FA ──────────────────────────── */
+.totp-status-enabled{color:#6daf82;font-size:.85rem;font-weight:500}
+.totp-status-disabled{color:var(--muted);font-size:.85rem}
+.totp-qr-container{text-align:center;margin:16px 0}
+.totp-qr-container img{width:180px;height:180px;border-radius:8px;background:#fff;padding:8px}
+.totp-secret-display{
+  font-family:var(--font-mono);
+  letter-spacing:.1em;
+  text-align:center;
+  user-select:all;
+  font-size:.85rem;
+}
+.totp-setup-hint{color:var(--muted);font-size:.85rem;margin-bottom:16px;line-height:1.5}
+.totp-verify-modal .admin-modal{max-width:380px;text-align:center}
+.totp-verify-modal .admin-otp-input{font-size:1.3rem;letter-spacing:.3em}
+.totp-verify-modal .admin-modal-actions{justify-content:center}
+.totp-modal-dialog{max-width:440px}
+.totp-modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+.totp-modal-header .admin-modal-title{margin-bottom:0}
