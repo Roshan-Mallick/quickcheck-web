@@ -149,7 +149,9 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html { scroll-behavior: initial; overflow-x: hidden; }
+
+#smooth-wrapper { position: relative; }
 
 img { max-width: 100%; height: auto; }
 

@@ -117,6 +117,8 @@
     </div>
   </nav>
 
+  <div id="smooth-wrapper">
+
   <!-- Hero -->
   <section class="hero reveal" id="hero">
     <canvas id="hero-canvas" aria-hidden="true"></canvas>
@@ -741,7 +743,28 @@
     </div>
   </footer>
 
+  </div>
+
   <div id="bg-gradients" aria-hidden="true"></div>
+  <script src="js/vendor/lenis.min.js"></script>
+  <script>
+    (function () {
+      var lenis = new Lenis({
+        duration: 0.8,
+        easing: function (t) { return 1 - Math.pow(1 - t, 3); },
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1.2,
+        content: document.getElementById('smooth-wrapper'),
+      });
+      function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      }
+      requestAnimationFrame(raf);
+    })();
+  </script>
   <script src="script.js"></script>
   <script src="hero-bg.js"></script>
 
