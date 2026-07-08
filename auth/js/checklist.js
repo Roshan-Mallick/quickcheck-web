@@ -1,3 +1,22 @@
+// ─── Smooth scroll helper ─────────────────────────────────────────────────
+
+function smoothScrollTo(el) {
+  var container = document.getElementById('dash-cl-detail');
+  if (!container) return;
+  var start = container.scrollTop;
+  var target = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - container.clientHeight * 0.35;
+  var dy = target - start;
+  if (Math.abs(dy) < 2) return;
+  var dur = 800, t0 = performance.now();
+  function tick(now) {
+    var t = Math.min((now - t0) / dur, 1);
+    var e = t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2; // easeInOutQuint
+    container.scrollTop = start + dy * e;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 // ─── Create / Import ──────────────────────────────────────────────────────
 
 async function createBlankChecklist() {
@@ -225,10 +244,8 @@ function renderSections(cl) {
 
 // ─── Dashboard rendering ───────────────────────────────────────────────────
 
-let dashListCleared = false;
-
 function clearDashboardList() {
-  dashListCleared = true;
+  visitedChecklists = [];
   renderDashboardList();
   renderDashboardStats();
   document.getElementById('dash-cl-detail').innerHTML = '<div class="dash-cl-placeholder">Select a checklist to view details</div>';
@@ -237,13 +254,6 @@ function clearDashboardList() {
 function renderDashboardList() {
   const container = document.getElementById('dash-cl-items');
   if (!container) return;
-
-  if (dashListCleared) {
-    container.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--text3);text-align:center;">No recent checklists</div>';
-    document.getElementById('dash-cl-clear').textContent = 'Show all';
-    document.getElementById('dash-cl-clear').onclick = () => { dashListCleared = false; renderDashboardList(); renderDashboardStats(); };
-    return;
-  }
 
   container.innerHTML = '';
   if (!visitedChecklists.length) {
@@ -340,18 +350,6 @@ function renderDashboardActivity() {
   }
 }
 
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return mins + 'm ago';
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs + 'h ago';
-  const days = Math.floor(hrs / 24);
-  return days + 'd ago';
-}
-
 function createItemRow(cl, si, ii) {
   const item = cl.data[si].items[ii];
   const row  = document.createElement('label');
@@ -408,9 +406,7 @@ async function logActivity(action, target) {
       p_target_name: target,
     });
     // Refresh the activity feed so the new entry shows immediately
-    if (typeof loadWorkspaceActivity === 'function') {
-      await loadWorkspaceActivity(wsId);
-    }
+    await loadWorkspaceActivity?.(wsId);
     renderDashboardActivity();
   } catch (e) { console.error('[checklist] logActivity error:', e); }
 }
@@ -584,9 +580,29 @@ function confirmDelete(id) {
 let currentSearchQuery = '';
 
 function highlightText(text, query) {
-  var idx = text.toLowerCase().indexOf(query);
+  const idx = text.toLowerCase().indexOf(query);
   if (idx === -1) return esc(text);
   return esc(text.slice(0, idx)) + '<mark>' + esc(text.slice(idx, idx + query.length)) + '</mark>' + esc(text.slice(idx + query.length));
+}
+
+function searchAllChecklists(q) {
+  const ql = q.toLowerCase();
+  const results = [];
+  for (const cl of checklists.concat(universalChecklists)) {
+    if (cl.title.toLowerCase().includes(ql))
+      results.push({ type: 'checklist', clId: cl.id, si: -1, ii: -1, sectionTitle: '', html: highlightText(cl.title, ql) });
+    for (let si = 0; si < cl.data.length; si++) {
+      const section = cl.data[si];
+      if (section.title.toLowerCase().includes(ql))
+        results.push({ type: 'section', clId: cl.id, si, ii: -1, sectionTitle: '', html: highlightText(section.title, ql) });
+      for (let ii = 0; ii < section.items.length; ii++) {
+        const item = section.items[ii];
+        if (item.label.toLowerCase().includes(ql))
+          results.push({ type: 'item', clId: cl.id, si, ii, sectionTitle: section.title, html: highlightText(item.label, ql) });
+      }
+    }
+  }
+  return results;
 }
 
 function doSidebarSearch() {
@@ -602,74 +618,49 @@ function doSidebarSearch() {
     return;
   }
 
-  var results = [];
-
-  // Search every checklist (personal + all workspaces) for universal results
-  var universalSource = checklists.concat(universalChecklists);
-
-  for (var ci = 0; ci < universalSource.length; ci++) {
-    var cl = universalSource[ci];
-    if (cl.title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'checklist', clId: cl.id, si: -1, ii: -1, sectionTitle: '', html: highlightText(cl.title, q) });
-    }
-    for (var si = 0; si < cl.data.length; si++) {
-      var section = cl.data[si];
-      if (section.title.toLowerCase().indexOf(q) !== -1) {
-        results.push({ type: 'section', clId: cl.id, si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
-      }
-      for (var ii = 0; ii < section.items.length; ii++) {
-        var item = section.items[ii];
-        if (item.label.toLowerCase().indexOf(q) !== -1) {
-          results.push({ type: 'item', clId: cl.id, si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
-        }
-      }
-    }
-  }
+  var results = searchAllChecklists(q);
 
   var activeCl = getActive();
   if (activeCl) applySearchHighlights(q);
 
   if (results.length === 0) {
-    dropdown.innerHTML = '<div class="search-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><p>No results for "' + esc(q) + '"</p></div>';
+    dropdown.innerHTML = `<div class="search-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><p>No results for "${esc(q)}"</p></div>`;
     dropdown.classList.add('open');
     return;
   }
 
   var html = '';
 
-  var checklistResults = results.filter(function(r) { return r.type === 'checklist'; });
+  var checklistResults = results.filter(r => r.type === 'checklist');
   if (checklistResults.length) {
     html += '<div class="search-result-group-label">Checklist</div>';
     for (var i = 0; i < checklistResults.length; i++) {
       var r = checklistResults[i];
-      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-item" data-cl-id="${r.clId}" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">${r.html}</span></div>`;
     }
   }
 
-  var sectionResults = results.filter(function(r) { return r.type === 'section'; });
+  var sectionResults = results.filter(r => r.type === 'section');
   if (sectionResults.length) {
     html += '<div class="search-result-group-label">Sections</div>';
     for (var i = 0; i < sectionResults.length; i++) {
       var r = sectionResults[i];
-      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-item" data-cl-id="${r.clId}" data-si="${r.si}" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">${r.html}</span></div>`;
     }
   }
 
-  var itemResults = results.filter(function(r) { return r.type === 'item'; });
+  var itemResults = results.filter(r => r.type === 'item');
   if (itemResults.length) {
-    var grouped = {};
-    for (var i = 0; i < itemResults.length; i++) {
-      var r = itemResults[i];
-      if (!grouped[r.sectionTitle]) grouped[r.sectionTitle] = [];
-      grouped[r.sectionTitle].push(r);
-    }
+    var grouped = itemResults.reduce((acc, r) => {
+      (acc[r.sectionTitle] ??= []).push(r);
+      return acc;
+    }, {});
     var sectionNames = Object.keys(grouped);
     for (var s = 0; s < sectionNames.length; s++) {
-      html += '<div class="search-result-group-label">' + esc(sectionNames[s]) + '</div>';
-      var items = grouped[sectionNames[s]];
-      for (var j = 0; j < items.length; j++) {
-        var r = items[j];
-        html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-group-label">${esc(sectionNames[s])}</div>`;
+      for (var j = 0; j < grouped[sectionNames[s]].length; j++) {
+        var r = grouped[sectionNames[s]][j];
+        html += `<div class="search-result-item" data-cl-id="${r.clId}" data-si="${r.si}" data-ii="${r.ii}" data-type="item"><span class="search-result-label">${r.html}</span></div>`;
       }
     }
   }
@@ -766,14 +757,14 @@ function handleSearchResult(type, clId, si, ii) {
         if (type === 'section') {
           var el = document.querySelector('.section-header[data-si="' + si + '"]');
           if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            smoothScrollTo(el);
             el.classList.add('search-highlight-flash');
             setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
           }
         } else {
           var el = document.querySelector('[data-si="' + si + '"][data-ii="' + ii + '"]');
           if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            smoothScrollTo(el);
             el.classList.add('search-highlight-flash');
             setTimeout(function() { el.classList.remove('search-highlight-flash'); }, 1500);
           }
@@ -811,29 +802,7 @@ function doModalSearch() {
     return;
   }
 
-  var results = [];
-
-  // Search every checklist (personal + all workspaces) for universal results
-  var universalSource = checklists.concat(universalChecklists);
-
-  for (var ci = 0; ci < universalSource.length; ci++) {
-    var cl = universalSource[ci];
-    if (cl.title.toLowerCase().indexOf(q) !== -1) {
-      results.push({ type: 'checklist', clId: cl.id, si: -1, ii: -1, sectionTitle: '', html: highlightText(cl.title, q) });
-    }
-    for (var si = 0; si < cl.data.length; si++) {
-      var section = cl.data[si];
-      if (section.title.toLowerCase().indexOf(q) !== -1) {
-        results.push({ type: 'section', clId: cl.id, si: si, ii: -1, sectionTitle: '', html: highlightText(section.title, q) });
-      }
-      for (var ii = 0; ii < section.items.length; ii++) {
-        var item = section.items[ii];
-        if (item.label.toLowerCase().indexOf(q) !== -1) {
-          results.push({ type: 'item', clId: cl.id, si: si, ii: ii, sectionTitle: section.title, html: highlightText(item.label, q) });
-        }
-      }
-    }
-  }
+  var results = searchAllChecklists(q);
 
   if (results.length === 0) {
     container.innerHTML = '';
@@ -845,39 +814,36 @@ function doModalSearch() {
   empty.style.display = 'none';
   var html = '';
 
-  var checklistResults = results.filter(function(r) { return r.type === 'checklist'; });
+  var checklistResults = results.filter(r => r.type === 'checklist');
   if (checklistResults.length) {
     html += '<div class="search-result-group-label">Checklist</div>';
     for (var i = 0; i < checklistResults.length; i++) {
       var r = checklistResults[i];
-      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-item" data-cl-id="${r.clId}" data-type="checklist"><span class="search-result-type">title</span><span class="search-result-label">${r.html}</span></div>`;
     }
   }
 
-  var sectionResults = results.filter(function(r) { return r.type === 'section'; });
+  var sectionResults = results.filter(r => r.type === 'section');
   if (sectionResults.length) {
     html += '<div class="search-result-group-label">Sections</div>';
     for (var i = 0; i < sectionResults.length; i++) {
       var r = sectionResults[i];
-      html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-item" data-cl-id="${r.clId}" data-si="${r.si}" data-ii="-1" data-type="section"><span class="search-result-type">section</span><span class="search-result-label">${r.html}</span></div>`;
     }
   }
 
-  var itemResults = results.filter(function(r) { return r.type === 'item'; });
+  var itemResults = results.filter(r => r.type === 'item');
   if (itemResults.length) {
-    var grouped = {};
-    for (var i = 0; i < itemResults.length; i++) {
-      var r = itemResults[i];
-      if (!grouped[r.sectionTitle]) grouped[r.sectionTitle] = [];
-      grouped[r.sectionTitle].push(r);
-    }
+    var grouped = itemResults.reduce((acc, r) => {
+      (acc[r.sectionTitle] ??= []).push(r);
+      return acc;
+    }, {});
     var sectionNames = Object.keys(grouped);
     for (var s = 0; s < sectionNames.length; s++) {
-      html += '<div class="search-result-group-label">' + esc(sectionNames[s]) + '</div>';
-      var items = grouped[sectionNames[s]];
-      for (var j = 0; j < items.length; j++) {
-        var r = items[j];
-        html += '<div class="search-result-item" data-cl-id="' + r.clId + '" data-si="' + r.si + '" data-ii="' + r.ii + '" data-type="item"><span class="search-result-label">' + r.html + '</span></div>';
+      html += `<div class="search-result-group-label">${esc(sectionNames[s])}</div>`;
+      for (var j = 0; j < grouped[sectionNames[s]].length; j++) {
+        var r = grouped[sectionNames[s]][j];
+        html += `<div class="search-result-item" data-cl-id="${r.clId}" data-si="${r.si}" data-ii="${r.ii}" data-type="item"><span class="search-result-label">${r.html}</span></div>`;
       }
     }
   }

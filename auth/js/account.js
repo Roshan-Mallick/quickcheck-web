@@ -315,7 +315,7 @@ async function verifyEmailChangeOtp() {
     emailBtn.textContent = 'Update email';
     document.getElementById('account-email-verify-btn').style.display = 'none';
     document.getElementById('email-change-hint').textContent = 'Enter a new email, then verify with a code sent to your current email.';
-    showAccountMsg('Email changed to ' + changedEmail + '.');
+    showAccountMsg(`Email changed to ${changedEmail}.`);
     showToast('Email updated.');
 
   } catch (err) {
@@ -354,8 +354,7 @@ function maskEmail(email) {
   if (!email) return '';
   const [local, domain] = email.split('@');
   if (!domain) return email;
-  const masked = local[0] + '***';
-  return masked + '@' + domain;
+  return `${local[0]}***@${domain}`;
 }
 
 function showRecoveryFlowMsg(type, text) {
@@ -441,7 +440,7 @@ async function resendRecoveryFlowOtp() {
       email: _recoveryFlowEmail,
       options: { shouldCreateUser: false },
     });
-    showRecoveryFlowMsg('success', 'Code resent to ' + maskEmail(_recoveryFlowEmail) + '.');
+    showRecoveryFlowMsg('success', `Code resent to ${maskEmail(_recoveryFlowEmail)}.`);
   } catch (err) {
     showRecoveryFlowMsg('error', err.message || 'Failed to resend.');
   } finally {
@@ -481,7 +480,7 @@ async function recoveryFlowAction() {
         _recoveryFlowState = 'add-step2';
         document.getElementById('recovery-flow-new-email-group').style.display = 'none';
         document.getElementById('recovery-flow-otp-group').style.display = 'block';
-        document.getElementById('recovery-flow-info').textContent = 'A code was sent to your primary email (' + maskEmail(currentUser.email) + '). Enter it below.';
+        document.getElementById('recovery-flow-info').textContent = `A code was sent to your primary email (${maskEmail(currentUser.email)}). Enter it below.`;
         actionBtn.textContent = 'Verify & Add';
         actionBtn.disabled = false;
         document.getElementById('recovery-flow-otp').focus();
@@ -530,7 +529,7 @@ async function recoveryFlowAction() {
 
         _recoveryFlowState = 'remove-step2';
         document.getElementById('recovery-flow-otp-group').style.display = 'block';
-        document.getElementById('recovery-flow-info').textContent = 'A code was sent to your primary email (' + maskEmail(currentUser.email) + '). Enter it below.';
+        document.getElementById('recovery-flow-info').textContent = `A code was sent to your primary email (${maskEmail(currentUser.email)}). Enter it below.`;
         actionBtn.textContent = 'Verify & Remove';
         actionBtn.disabled = false;
         document.getElementById('recovery-flow-otp').focus();
@@ -612,7 +611,7 @@ async function recoveryFlowAction() {
         });
         if (rpcError) throw rpcError;
 
-        showRecoveryFlowMsg('success', 'Recovery email updated to ' + maskEmail(newEmail) + '.');
+        showRecoveryFlowMsg('success', `Recovery email updated to ${maskEmail(newEmail)}.`);
         actionBtn.style.display = 'none';
         document.getElementById('recovery-flow-otp-group').style.display = 'none';
         document.getElementById('recovery-flow-new-email-group').style.display = 'none';
@@ -935,7 +934,7 @@ async function handleDeleteAccount() {
     .select('value')
     .eq('key', 'admin_email');
 
-  if (adminRows && adminRows.length > 0 && adminRows[0].value === currentUser.email) {
+  if (adminRows?.[0]?.value === currentUser.email) {
     showAccountMsg('This account is the admin and cannot be deleted via this dashboard. Go to the Admin Panel to transfer the admin role first.', 'error');
     return;
   }
@@ -1007,7 +1006,7 @@ async function handleDeleteOtpSubmit(e) {
       .select('value')
       .eq('key', 'admin_email');
 
-    if (adminRows && adminRows.length > 0 && adminRows[0].value === currentUser.email) {
+    if (adminRows?.[0]?.value === currentUser.email) {
       throw new Error('Cannot delete the admin account.');
     }
 

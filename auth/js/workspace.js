@@ -594,13 +594,15 @@ function formatAction(action, meta, target_name) {
 }
 
 function timeAgo(dateStr) {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = Math.floor((now - then) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return Math.floor(diff / 60) + 'm';
-  if (diff < 86400) return Math.floor(diff / 3600) + 'h';
-  if (diff < 2592000) return Math.floor(diff / 86400) + 'd';
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
   return new Date(dateStr).toLocaleDateString();
 }
 
@@ -914,8 +916,8 @@ function showWorkspaceSettingsMenu(e, wsId) {
     }
     if (top < 8) top = 8;
 
-    menu.style.left = left + 'px';
-    menu.style.top = top + 'px';
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
   }
   menu.classList.add('open');
 }
@@ -1265,11 +1267,11 @@ function confirmTransferOwnership(wsId, userId, userName) {
   showConfirmModal({
     label: 'Transfer Ownership',
     title: 'Transfer Workspace Ownership',
-    message: 'You are about to transfer ownership of this workspace to "' + userName + '".\n\nThis action will make them the new owner and downgrade you to Admin.',
+    message: `You are about to transfer ownership of this workspace to "${userName}".\n\nThis action will make them the new owner and downgrade you to Admin.`,
     onConfirm: async () => {
       const { error } = await sb.rpc('transfer_workspace_ownership', { ws_id: wsId, new_owner_id: userId });
       if (error) { showToast(error.message, 'error'); return; }
-      showToast('Ownership transferred to ' + userName + '.');
+      showToast(`Ownership transferred to ${userName}.`);
       await loadWorkspaces();
       await loadWorkspaceMembers(wsId);
       const ws = workspaces.find(w => w.id === wsId);

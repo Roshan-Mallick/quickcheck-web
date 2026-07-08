@@ -2637,9 +2637,16 @@ body {
   border: 1px solid rgba(201,162,39,0.14);
   border-radius: var(--radius-lg);
   overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,162,39,0.25) transparent;
   padding: 28px 28px 60px;
   box-shadow: 0 2px 20px rgba(201,162,39,0.03), inset 0 1px 0 rgba(201,162,39,0.04);
 }
+.dash-cl-detail::-webkit-scrollbar { width: 5px; }
+.dash-cl-detail::-webkit-scrollbar-track { background: transparent; }
+.dash-cl-detail::-webkit-scrollbar-thumb { background: rgba(201,162,39,0.2); border-radius: 3px; }
+.dash-cl-detail::-webkit-scrollbar-thumb:hover { background: rgba(201,162,39,0.4); }
 .dash-cl-detail .checklist-view {
   display: block !important;
   max-width: none;

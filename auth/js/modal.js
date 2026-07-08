@@ -24,9 +24,7 @@ function showConfirmModal({
   actionBtn.onclick = () => {
     closeModal('confirm-modal');
 
-    if (typeof confirmAction === 'function') {
-      confirmAction();
-    }
+    confirmAction?.()
   };
 
   document.getElementById('confirm-modal').classList.add('open');

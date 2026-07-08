@@ -1,5 +1,8 @@
 // ─── Utilities ────────────────────────────────────────────────────────────
 
+const show = id => document.getElementById(id).style.display = '';
+const hide = id => document.getElementById(id).style.display = 'none';
+
 /**
  * Generate a random UUID for checklist/section/item IDs.
  */

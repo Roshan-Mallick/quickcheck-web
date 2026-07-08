@@ -180,7 +180,7 @@ function showInviteEmailMismatch(data) {
   document.getElementById('invite-error-icon').innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
   document.getElementById('invite-error-title').textContent = 'Wrong Account';
   document.getElementById('invite-error-msg').textContent =
-    'This invitation was sent to ' + data.invited_email + '. Please sign out and log in with that email address to accept.';
+    `This invitation was sent to ${data.invited_email}. Please sign out and log in with that email address to accept.`;
   document.getElementById('invite-error-action').style.display = 'block';
   document.getElementById('invite-error-action').innerHTML = '<button class="btn-outline" onclick="signOut(); showInviteLoginRequired(_inviteData)">Sign out</button>';
   switchAuthView('invite');
@@ -221,7 +221,7 @@ function showInviteExpired(data) {
   document.getElementById('invite-error-icon').innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
   document.getElementById('invite-error-title').textContent = 'Invitation Expired';
   document.getElementById('invite-error-msg').textContent =
-    'This invitation to \u201c' + data.workspace_name + '\u201d has expired. Please ask the workspace owner to send a new invitation.';
+    `This invitation to "${data.workspace_name}" has expired. Please ask the workspace owner to send a new invitation.`;
   document.getElementById('invite-error-action').style.display = 'none';
   switchAuthView('invite');
 }
