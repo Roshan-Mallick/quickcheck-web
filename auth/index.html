@@ -1341,21 +1341,20 @@
     </div>
   </div>
 
-  <!-- ─── TEMPORARY: UPGRADE ACCESS-CODE MODAL ────────────────────── -->
-  <!-- TODO: Remove this modal when Stripe integration is complete. -->
+  <!-- ─── UPGRADE MODAL ──────────────────────────────────────────────── -->
   <div class="modal-overlay" id="upgrade-modal">
     <div class="modal">
       <div class="modal-label">Upgrade</div>
-      <h3 class="modal-title" id="upgrade-modal-title">Enter Access Code</h3>
+      <h3 class="modal-title" id="upgrade-modal-title">Upgrade Plan</h3>
       <p class="modal-description">
-        Enter your access code to upgrade to <strong id="upgrade-plan-name"></strong>.
+        Type <strong>PRO</strong> or <strong>TEAM</strong> to upgrade.
       </p>
       <form id="upgrade-form" onsubmit="handleUpgradeSubmit(event)">
         <input
           type="text"
           id="upgrade-input"
           class="otp-input"
-          placeholder="Enter code"
+          placeholder="PRO or TEAM"
           autocomplete="off"
           style="font-size:20px;letter-spacing:4px;text-transform:uppercase;"
         />
