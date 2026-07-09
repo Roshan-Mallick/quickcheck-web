@@ -165,6 +165,15 @@ function buildChatActions(content) {
   let heading = 'Checklist ready!'
   const match = normalized.match(/^#\s+(.+)/m)
   if (match) heading = match[1].trim()
+  const phaseRe = /^(?:Phase|Chapter|Part|Step|Section)\s+\d+/i
+  if (phaseRe.test(heading)) {
+    const phases = [...normalized.matchAll(/^#\s+(?:Phase|Chapter|Part|Step|Section)\s+\d+[.:)\s-]+(.+)/gim)]
+    if (phases.length > 1) {
+      const topics = phases.map(m => m[1].trim())
+      const dev = topics.filter(t => /develop|engineer|program|design/i.test(t))
+      heading = (dev.length ? dev[dev.length - 1] : topics[topics.length - 1]) + ' Checklist'
+    }
+  }
 
   const dlSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
   const importSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M21 12l-9 5-9-5"/><path d="M21 17l-9 5-9-5"/></svg>'
@@ -326,6 +335,17 @@ function normalizeMd(text) {
     }
     out.push(line)
   }
+
+  // Strip common AI conversational prefixes from the first non-empty line
+  const convoRe = /^(?:sure[!,.]?\s+|here(?:'s| is| are)\s+(?:a |an |the |your )?|of course[!,.]?\s+|absolutely[!,.]?\s+|certainly[!,.]?\s+|definitely[!,.]?\s+|let me\s+|i'?ll\s+|below is\s+|below are\s+|check out\s+|here you go[!,.]?\s+|this is\s+)?(?:a |an |the |your )?(?:comprehensive |complete |detailed |simple |quick |full |basic )?(?:checklist|learning guide|roadmap|plan|guide|tutorial|overview|cheat sheet|notes)[!.:;\s]*/i
+  for (let i = 0; i < out.length; i++) {
+    const trimmed = out[i].trim()
+    if (!trimmed) continue
+    if (/^#/.test(trimmed) || /^[-*+]\s+\[/.test(trimmed)) break
+    if (convoRe.test(trimmed)) { out[i] = ''; continue }
+    break
+  }
+
   for (let i = 0; i < out.length; i++) {
     const trimmed = out[i].trim()
     if (!trimmed || /^#/.test(out[i]) || /^[-*+]\s+\[/.test(out[i])) continue
@@ -338,9 +358,11 @@ function normalizeMd(text) {
       break
     }
   }
-  const first = out[0]?.trim()
+
+  const first = out.find(l => l.trim())
   if (first && !/^#/.test(first) && !/^[-*+]/.test(first)) {
-    out[0] = '# ' + first
+    const idx = out.indexOf(first)
+    out[idx] = '# ' + first.trim()
   }
   return out.join('\n')
 }
@@ -365,7 +387,20 @@ function buildChecklistFromMd(md) {
     return null
   }
   const titleMatch = normalized.match(/^#\s+(.+)/m)
-  const title = titleMatch ? titleMatch[1].trim() : (sections[0]?.title || 'AI Generated Checklist')
+  let title = titleMatch ? titleMatch[1].trim() : ''
+  const phaseRe = /^(?:Phase|Chapter|Part|Step|Section)\s+\d+/i
+  if (phaseRe.test(title)) {
+    const phases = [...normalized.matchAll(/^#\s+(?:Phase|Chapter|Part|Step|Section)\s+\d+[.:)\s-]+(.+)/gim)]
+    if (phases.length > 1) {
+      const topics = phases.map(m => m[1].trim())
+      const dev = topics.filter(t => /develop|engineer|program|design/i.test(t))
+      title = (dev.length ? dev[dev.length - 1] : topics[topics.length - 1]) + ' Checklist'
+    }
+  }
+  if (!title || /^[-*+]/.test(title)) {
+    const s0 = sections[0]?.title || ''
+    title = s0 ? s0 + ' Checklist' : 'AI Generated Checklist'
+  }
   return { id: uid(), title, data: sections }
 }
 
@@ -423,7 +458,17 @@ async function importToWorkspace(wsId, wsName) {
 function downloadAIChecklist(content) {
   const md = normalizeMd(content)
   const titleMatch = md.match(/^#\s+(.+)/m)
-  const title = titleMatch ? titleMatch[1].trim() : 'checklist'
+  let title = titleMatch ? titleMatch[1].trim() : ''
+  const phaseRe = /^(?:Phase|Chapter|Part|Step|Section)\s+\d+/i
+  if (phaseRe.test(title)) {
+    const phases = [...md.matchAll(/^#\s+(?:Phase|Chapter|Part|Step|Section)\s+\d+[.:)\s-]+(.+)/gim)]
+    if (phases.length > 1) {
+      const topics = phases.map(m => m[1].trim())
+      const dev = topics.filter(t => /develop|engineer|program|design/i.test(t))
+      title = (dev.length ? dev[dev.length - 1] : topics[topics.length - 1]) + ' Checklist'
+    }
+  }
+  if (!title || /^[-*+]/.test(title)) title = 'checklist'
 
   const blob = new Blob([md], { type: 'text/markdown' })
   const url = URL.createObjectURL(blob)
@@ -455,6 +500,7 @@ async function sendChatMessage() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
+      if (res.status === 429) throw new Error('RATE_LIMIT')
       throw new Error(err.error || 'Request failed')
     }
 
@@ -463,9 +509,15 @@ async function sendChatMessage() {
   } catch (e) {
     hideChatLoading()
     chatLoading = false
-    const detail = e.message || 'Please try again.'
-    appendMessage('assistant', 'Sorry, something went wrong. ' + detail)
-    showToast('Failed to get response from AI.', 'error')
+    chatHistory.pop()
+    if (e.message === 'RATE_LIMIT') {
+      appendMessage('assistant', 'Rate limit hit — too many requests. Wait a minute and try again.')
+      showToast('Too many requests. Try again shortly.', 'error')
+    } else {
+      const detail = e.message || 'Please try again.'
+      appendMessage('assistant', 'Sorry, something went wrong. ' + detail)
+      showToast('Failed to get response from AI.', 'error')
+    }
   }
 }
 
