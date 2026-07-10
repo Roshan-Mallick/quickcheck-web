@@ -4,7 +4,7 @@ let typingTimer = null
 let userScrolledUp = false
 let pendingImportContent = null
 const CHAT_HISTORY_MAX = 20
-const REQUEST_TIMEOUT_MS = 30000
+const REQUEST_TIMEOUT_MS = 120000
 
 function openAIChat() {
   const overlay = document.getElementById('quickcheck-ai-overlay')
@@ -514,8 +514,44 @@ async function sendChatMessage() {
       throw new Error(err.error || 'Request failed')
     }
 
-    const data = await res.json()
-    appendAssistantMessage(data.reply, true)
+    const ct = res.headers.get('content-type') || ''
+
+    if (ct.includes('text/plain')) {
+      // Streaming response — read tokens as they arrive
+      hideChatLoading()
+      const inner = document.getElementById('quickcheck-ai-messages-inner')
+      const scroller = document.getElementById('quickcheck-ai-messages')
+      const div = document.createElement('div')
+      div.className = 'quickcheck-ai-msg quickcheck-ai-msg-assistant'
+      div.id = 'ai-typing-msg'
+      inner.appendChild(div)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        fullText += decoder.decode(value, { stream: true })
+        div.textContent = fullText
+        if (!userScrolledUp) scrollChatToBottom(scroller)
+      }
+
+      typingTimer = null
+      div.id = ''
+      chatLoading = false
+      setInputDisabled(false)
+      chatHistory.push({ role: 'assistant', content: fullText })
+      const panel = buildChatActions(fullText)
+      div.insertAdjacentElement('afterend', panel)
+      setTimeout(() => { if (!userScrolledUp) scrollChatToBottom(scroller) }, 10)
+    } else {
+      // JSON fallback — edge function not yet deployed with streaming
+      const data = await res.json()
+      appendAssistantMessage(data.reply, true)
+    }
+
   } catch (e) {
     hideChatLoading()
     chatLoading = false
@@ -553,6 +589,10 @@ document.getElementById('quickcheck-ai-input').addEventListener('keydown', funct
     e.preventDefault()
     sendChatMessage()
   }
+})
+
+document.getElementById('quickcheck-ai-send-btn').addEventListener('click', function () {
+  sendChatMessage()
 })
 
 document.getElementById('quickcheck-ai-messages').addEventListener('scroll', onChatScroll, { passive: true })
