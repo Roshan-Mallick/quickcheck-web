@@ -1,11 +1,10 @@
-if (!SUPABASE_URL || !SUPABASE_URL.startsWith('https://')) throw new Error('Invalid SUPABASE_URL');
-const AI_FUNCTION_URL = SUPABASE_URL + '/functions/v1/generate-checklist';
-
 let chatHistory = []
 let chatLoading = false
 let typingTimer = null
 let userScrolledUp = false
 let pendingImportContent = null
+const CHAT_HISTORY_MAX = 20
+const REQUEST_TIMEOUT_MS = 30000
 
 function openAIChat() {
   const overlay = document.getElementById('quickcheck-ai-overlay')
@@ -488,36 +487,49 @@ async function sendChatMessage() {
   input.value = ''
   appendMessage('user', msg)
   chatHistory.push({ role: 'user', content: msg })
+
+  if (chatHistory.length > CHAT_HISTORY_MAX) {
+    chatHistory = chatHistory.slice(-CHAT_HISTORY_MAX)
+  }
+
   showChatLoading()
   chatLoading = true
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
   try {
     const res = await fetch(AI_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+      },
       body: JSON.stringify({ message: msg, history: chatHistory.slice(0, -1) }),
+      signal: controller.signal,
     })
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      if (res.status === 429) throw new Error('RATE_LIMIT')
       throw new Error(err.error || 'Request failed')
     }
 
     const data = await res.json()
-    appendAssistantMessage(data.reply, data.done)
+    appendAssistantMessage(data.reply, true)
   } catch (e) {
     hideChatLoading()
     chatLoading = false
     chatHistory.pop()
-    if (e.message === 'RATE_LIMIT') {
-      appendMessage('assistant', 'Rate limit hit — too many requests. Wait a minute and try again.')
-      showToast('Too many requests. Try again shortly.', 'error')
+    if (e.name === 'AbortError') {
+      appendMessage('assistant', 'Request timed out — the AI took too long. Try a shorter prompt.')
+      showToast('Request timed out.', 'error')
     } else {
       const detail = e.message || 'Please try again.'
       appendMessage('assistant', 'Sorry, something went wrong. ' + detail)
       showToast('Failed to get response from AI.', 'error')
     }
+  } finally {
+    clearTimeout(timer)
   }
 }
 
