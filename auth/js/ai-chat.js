@@ -505,7 +505,7 @@ async function sendChatMessage() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + SUPABASE_ANON,
       },
-      body: JSON.stringify({ message: msg, history: chatHistory.slice(0, -1) }),
+      body: JSON.stringify({ message: msg, history: chatHistory.slice(0, -1), stream: true }),
       signal: controller.signal,
     })
 
